@@ -1,6 +1,6 @@
 # Relatorio JRC Brasil
 
-Sistema web de compliance de TI para a JRC Brasil — gera e gerencia 19 relatorios de auditoria de seguranca da informacao exigidos anualmente pela matriz japonesa.
+Sistema web de compliance de TI para a JRC Brasil — gera e gerencia relatorios de auditoria de seguranca da informacao exigidos anualmente pela matriz japonesa.
 
 **Disciplina:** Laboratorio de Desenvolvimento de Software
 **Status:** Em desenvolvimento
@@ -63,6 +63,7 @@ Acesse: `http://localhost:3000`
 ### Sem Docker
 
 **Backend:**
+
 ```bash
 cd backend
 python -m venv venv && source venv/bin/activate
@@ -73,6 +74,7 @@ python manage.py runserver
 ```
 
 **Frontend:**
+
 ```bash
 cd frontend
 npm install
