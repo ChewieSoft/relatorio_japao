@@ -11,7 +11,7 @@ A JRC Brasil precisa enviar anualmente para a matriz no Japao uma serie de relat
 
 ## Arquitetura
 
-```
+``` 
 React SPA (:3000)  <-->  Django REST API (:8000)  <-->  PostgreSQL (:5432)
 ```
 
