@@ -28,7 +28,12 @@ api.interceptors.request.use((config) => {
  * Interceptor de response: renova access token automaticamente
  * quando recebe 401, usando o refresh token. Em caso de falha
  * no refresh, limpa tokens e redireciona para /login.
+ *
+ * Usa uma Promise compartilhada para evitar múltiplas chamadas
+ * de refresh simultâneas quando vários requests falham com 401.
  */
+let refreshPromise: Promise<string> | null = null
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -38,17 +43,26 @@ api.interceptors.response.use(
       originalRequest._retry = true
 
       try {
-        const refresh = localStorage.getItem('refresh_token')
-        if (!refresh) {
-          throw new Error('No refresh token')
+        if (!refreshPromise) {
+          refreshPromise = (async () => {
+            const refresh = localStorage.getItem('refresh_token')
+            if (!refresh) {
+              throw new Error('No refresh token')
+            }
+
+            const res = await axios.post(
+              `${api.defaults.baseURL}/auth/refresh/`,
+              { refresh }
+            )
+            localStorage.setItem('access_token', res.data.access)
+            return res.data.access as string
+          })().finally(() => {
+            refreshPromise = null
+          })
         }
 
-        const res = await axios.post(
-          `${api.defaults.baseURL}/auth/refresh/`,
-          { refresh }
-        )
-        localStorage.setItem('access_token', res.data.access)
-        originalRequest.headers.Authorization = `Bearer ${res.data.access}`
+        const newToken = await refreshPromise
+        originalRequest.headers.Authorization = `Bearer ${newToken}`
         return api(originalRequest)
       } catch {
         localStorage.removeItem('access_token')

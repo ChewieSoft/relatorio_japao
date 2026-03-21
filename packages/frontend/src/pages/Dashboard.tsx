@@ -5,19 +5,21 @@
  * lista de relatórios pendentes e concluídos via useReportsList,
  * e alertas de segurança (máquinas sem criptografia).
  */
-import { Users, Monitor, Package, FileText, AlertTriangle, CheckCircle } from "lucide-react";
+import { Users, Monitor, Package, FileText, AlertTriangle, CheckCircle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useReportsList } from "@/hooks/useReports";
 
 const Dashboard = () => {
-  const { data: stats, isLoading: statsLoading } = useDashboardStats();
-  const { data: reportsData, isLoading: reportsLoading } = useReportsList();
+  const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useDashboardStats();
+  const { data: reportsData, isLoading: reportsLoading, isError: reportsError, refetch: refetchReports } = useReportsList();
 
   const isLoading = statsLoading || reportsLoading;
+  const isError = statsError || reportsError;
 
   const kpis = stats ? [
     {
@@ -59,6 +61,16 @@ const Dashboard = () => {
   return (
     <AppLayout>
       <PageHeader title="Dashboard" subtitle="Visão geral do compliance de TI — JRC Brasil" />
+
+      {isError && (
+        <div className="p-8 text-center bg-card rounded-xl border border-border mb-8">
+          <AlertCircle className="w-8 h-8 text-destructive mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground mb-3">Erro ao carregar dados do dashboard.</p>
+          <Button variant="outline" size="sm" onClick={() => { refetchStats(); refetchReports(); }}>
+            Tentar novamente
+          </Button>
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

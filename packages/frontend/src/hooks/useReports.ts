@@ -63,7 +63,9 @@ async function downloadReport(reportNumber: string, format: 'pdf' | 'xlsx') {
   const link = document.createElement('a')
   link.href = url
   link.download = `relatorio_${reportNumber}.${format}`
+  document.body.appendChild(link)
   link.click()
+  link.remove()
   window.URL.revokeObjectURL(url)
 }
 

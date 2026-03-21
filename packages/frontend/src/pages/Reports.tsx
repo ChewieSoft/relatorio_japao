@@ -8,10 +8,10 @@
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
+import { TableSkeleton, TableError } from "@/components/TableStates";
 import { useReportsList, useGenerateReport, downloadReport } from "@/hooks/useReports";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { FileText, AlertCircle, Download } from "lucide-react";
+import { FileText, Download } from "lucide-react";
 import { toast } from "sonner";
 
 const Reports = () => {
@@ -39,11 +39,7 @@ const Reports = () => {
     return (
       <AppLayout>
         <PageHeader title="Relatórios" subtitle="Geração de relatórios de auditoria para a matriz" />
-        <div className="space-y-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-32 w-full rounded-xl" />
-          ))}
-        </div>
+        <TableSkeleton rows={6} />
       </AppLayout>
     );
   }
@@ -52,11 +48,7 @@ const Reports = () => {
     return (
       <AppLayout>
         <PageHeader title="Relatórios" subtitle="Geração de relatórios de auditoria para a matriz" />
-        <div className="p-8 text-center">
-          <AlertCircle className="w-8 h-8 text-destructive mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground mb-3">Erro ao carregar relatórios.</p>
-          <Button variant="outline" size="sm" onClick={() => refetch()}>Tentar novamente</Button>
-        </div>
+        <TableError message="Erro ao carregar relatórios." onRetry={() => refetch()} />
       </AppLayout>
     );
   }

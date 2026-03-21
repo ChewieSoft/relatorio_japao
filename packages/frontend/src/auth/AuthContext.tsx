@@ -33,9 +33,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const controller = new AbortController()
     const token = localStorage.getItem('access_token')
     if (token) {
-      api.get('/auth/me/')
+      api.get('/auth/me/', { signal: controller.signal })
         .then(res => {
           setUser({
             id: res.data.id,
@@ -44,7 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             isStaff: res.data.is_staff,
           })
         })
-        .catch(() => {
+        .catch((err) => {
+          if (err.name === 'CanceledError') return
           localStorage.removeItem('access_token')
           localStorage.removeItem('refresh_token')
         })
@@ -52,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       setLoading(false)
     }
+    return () => controller.abort()
   }, [])
 
   /**
@@ -77,7 +80,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   /** Encerra sessão, invalida refresh token e limpa localStorage. */
   const logout = () => {
     const refresh = localStorage.getItem('refresh_token')
-    api.post('/auth/logout/', { refresh }).catch(() => {})
+    api.post('/auth/logout/', { refresh }).catch((err) => {
+      console.warn('Falha ao invalidar refresh token na API', err)
+    })
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
     setUser(null)
