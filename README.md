@@ -12,13 +12,13 @@ A JRC Brasil precisa enviar anualmente para a matriz no Japão uma série de rel
 ## Arquitetura
 
 ```text
-React SPA (:3000)  <-->  Django REST API (:8000)  <-->  PostgreSQL (:5432)
+React SPA (:8080)  <-->  Django REST API (:8000)  <-->  PostgreSQL (:5432)
 ```
 
 | Camada | Tecnologia |
 |--------|-----------|
 | Backend | Django 4.2 + Django REST Framework |
-| Frontend | React 18 + React Router + Axios + Tailwind CSS |
+| Frontend | React 18 + TypeScript + Vite + Tailwind CSS + shadcn/ui |
 | Autenticação | JWT (djangorestframework-simplejwt) |
 | Banco de Dados | PostgreSQL |
 | Deploy | Docker Compose (3 containers) |
@@ -42,12 +42,16 @@ relatorio_japao/
 │   ├── accounts/              # Auth JWT
 │   ├── core/                  # 14 modelos + Controllers/Services/Repositories
 │   └── reports/               # relatórios + Controllers/Services/Repositories/Exporters
-└── frontend/
-    └── src/
-        ├── api/               # Cliente Axios
-        ├── auth/              # Contexto JWT
-        ├── components/        # Componentes reutilizáveis
-        └── pages/             # Paginas da aplicacao
+└── packages/
+    └── frontend/
+        └── src/
+            ├── api/               # Cliente Axios + JWT
+            ├── auth/              # AuthContext, ProtectedRoute
+            ├── types/             # Interfaces TypeScript
+            ├── hooks/             # React Query hooks
+            ├── mocks/             # MSW (Mock Service Worker)
+            ├── components/        # Componentes reutilizáveis
+            └── pages/             # Páginas da aplicação
 ```
 
 ## Como Executar
@@ -76,9 +80,9 @@ python manage.py runserver
 **Frontend:**
 
 ```bash
-cd frontend
+cd packages/frontend
 npm install
-npm start
+npm run dev
 ```
 
 ## Domínio de Negócio
@@ -100,6 +104,7 @@ A partir desses cadastros, são gerados **relatórios de auditoria** cobrindo: c
 | [docs/BACKEND.md](docs/BACKEND.md) | Referência completa do backend Django/DRF |
 | [docs/FRONTEND.md](docs/FRONTEND.md) | Referência completa do frontend React |
 | [docs/INFRA.md](docs/INFRA.md) | Docker, deploy e troubleshooting |
+| [ROADMAP.md](ROADMAP.md) | Estado atual, fases do projeto e como usar |
 
 ## Contexto
 

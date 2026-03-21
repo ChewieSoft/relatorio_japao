@@ -392,6 +392,7 @@ SIMPLE_JWT = {
 ### Fase 6: Integração Frontend React
 
 **Objetivo:** Conectar o frontend React a API Django, implementando todas as telas.
+Seguir tokens e padroes visuais definidos em [.interface-design/system.md](.interface-design/system.md).
 
 **Páginas a implementar:**
 

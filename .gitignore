@@ -1,0 +1,59 @@
+# ===== Ferramentas de desenvolvimento / Claude Code =====
+.claude/
+.specify/
+
+# ===== Variáveis de ambiente e credenciais =====
+.env
+.env.local
+.env.*.local
+
+# ===== Python / Django (backend) =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+*.egg
+venv/
+.venv/
+env/
+ENV/
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+db.sqlite3
+db.sqlite3-journal
+*.log
+.mypy_cache/
+.tox/
+.nox/
+
+# ===== Node.js / React (frontend) =====
+node_modules/
+dist-ssr/
+*.local
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ===== IDE / Editor =====
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== Docker =====
+docker-compose.override.yml

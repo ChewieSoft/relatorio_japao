@@ -1,4 +1,4 @@
-# Relatorio JRC Brasil
+﻿# Relatorio JRC Brasil
 
 Sistema de compliance de TI para a JRC Brasil - gera e gerencia 19 relatorios de auditoria de seguranca da informacao exigidos pela matriz japonesa. Trabalho universitario (Lab. Desenvolvimento de Software).
 
@@ -364,7 +364,7 @@ Para a lista completa de anti-patterns a evitar, ver secao [Anti-patterns (NAO F
 ## Arquitetura
 
 ```
-React SPA (:3000)  <-->  Django REST API (:8000)  <-->  PostgreSQL (:5432)
+React SPA (:8080)  <-->  Django REST API (:8000)  <-->  PostgreSQL (:5432)
 ```
 
 **Backend em camadas:**
@@ -410,7 +410,14 @@ Request → urls.py (Route) → Controller → Service → Repository → Model/
 - Definir `staleTime` e `gcTime` (`cacheTime`) por dominio no `QueryClient` global.
 - Invalidar queries relacionadas apos mutacoes bem-sucedidas via `queryClient.invalidateQueries`.
 
-Para detalhes completos, consultar [docs/FRONTEND.md](docs/FRONTEND.md).
+### MSW (Mock Service Worker)
+
+- Usado apenas em desenvolvimento para simular a API Django.
+- Handlers em `packages/frontend/src/mocks/handlers/`.
+- Bootstrap condicional em `main.tsx` — zero impacto no build de produção.
+
+Para detalhes completos de implementacao, consultar [docs/FRONTEND.md](docs/FRONTEND.md).
+Para design tokens, espacamento, tipografia e padroes visuais de componentes, consultar [.interface-design/system.md](.interface-design/system.md).
 
 ## Estrutura do Monorepo
 
@@ -434,17 +441,20 @@ relatorio_japao/
 │   ├── accounts/        (auth JWT: controllers, services)
 │   ├── core/            (14 modelos + controllers/services/repositories)
 │   └── reports/         (19 relatorios: controllers/services/repositories/exporters)
-└── frontend/
-    ├── Dockerfile
-    ├── package.json
-    ├── nginx.conf
-    ├── public/
-    └── src/
-        ├── api/         (Axios client + React Query for data fetching/caching)
-        ├── auth/        (AuthContext, ProtectedRoute)
-        ├── components/  (Navbar, Card, DataTable, etc.)
-        ├── pages/       (Login, Home, Cadastro, Relatorios, etc.)
-        └── routes/
+└── packages/
+    └── frontend/
+        ├── vite.config.ts
+        ├── package.json
+        ├── public/
+        └── src/
+            ├── api/         (Axios client + JWT interceptors)
+            ├── auth/        (AuthContext, ProtectedRoute)
+            ├── types/       (TypeScript interfaces)
+            ├── hooks/       (React Query hooks por domínio)
+            ├── mocks/       (MSW handlers para desenvolvimento)
+            ├── components/  (AppSidebar, PageHeader, StatusBadge, ui/)
+            ├── pages/       (Login, Dashboard, Collaborators, Machines, Software, Reports)
+            └── lib/         (utils)
 ```
 
 ## Comandos Rapidos
@@ -462,13 +472,13 @@ python manage.py createsuperuser
 python manage.py runserver
 
 # Frontend (sem Docker)
-cd frontend
+cd packages/frontend
 npm install
-npm start
+npm run dev
 
 # Testes
 cd backend && pytest
-cd frontend && npm test
+cd packages/frontend && npm run test
 
 # Banco
 python manage.py makemigrations
@@ -551,7 +561,7 @@ class BaseRepository:
 
 - **Raw SQL** - Use Django ORM (QuerySets). Nunca `cursor.execute()`.
 - **Delete fisico** - Use `soft_delete()`. Nunca `Model.objects.delete()`.
-- **URLs hardcoded no frontend** - Use variavel de ambiente `REACT_APP_API_URL`.
+- **URLs hardcoded no frontend** - Use variavel de ambiente `VITE_API_URL`.
 - **Sem CORS** - Sempre configure `django-cors-headers`.
 - **Token em cookie** - Use localStorage + Axios interceptor.
 - **Controllers sem autenticacao** - Todos os controllers precisam de `IsAuthenticated` (exceto login/register).

@@ -1,0 +1,70 @@
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-sans/700.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 220 30% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 30% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 30% 12%;
+
+    --primary: 220 60% 22%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 25% 93%;
+    --secondary-foreground: 220 30% 12%;
+
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 170 55% 40%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214 25% 88%;
+    --input: 214 25% 88%;
+    --ring: 220 60% 22%;
+
+    --radius: 0.5rem;
+
+    --sidebar-bg: 220 40% 15%;
+    --sidebar-fg: 210 20% 85%;
+    --sidebar-hover: 220 35% 22%;
+    --sidebar-active: 220 50% 28%;
+    --sidebar-accent: 170 55% 50%;
+
+    --status-active: 150 55% 42%;
+    --status-inactive: 0 0% 60%;
+    --status-warning: 38 92% 50%;
+
+    --sidebar-background: 220 40% 15%;
+    --sidebar-foreground: 210 20% 85%;
+    --sidebar-primary: 220 50% 28%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 170 55% 50%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 220 30% 22%;
+    --sidebar-ring: 220 60% 22%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
