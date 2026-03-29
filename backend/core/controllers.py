@@ -92,12 +92,18 @@ class BaseController(viewsets.ModelViewSet):
     service = None
 
     def perform_create(self, serializer):
-        """Delega criacao ao service."""
-        self.service.create(serializer.validated_data)
+        """Delega criacao ao service e atribui instancia ao serializer.
+
+        Sem serializer.instance, o DRF retorna validated_data bruto
+        na resposta (sem id, created_at, etc.).
+        """
+        serializer.instance = self.service.create(serializer.validated_data)
 
     def perform_update(self, serializer):
-        """Delega atualizacao ao service."""
-        self.service.update(self.get_object().pk, serializer.validated_data)
+        """Delega atualizacao ao service e atribui instancia ao serializer."""
+        serializer.instance = self.service.update(
+            serializer.instance.pk, serializer.validated_data
+        )
 
     def perform_destroy(self, instance):
         """Delega soft delete ao service."""
