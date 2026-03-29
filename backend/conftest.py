@@ -3,6 +3,8 @@
 Fornece api_client autenticado e factories para
 as 3 entidades principais (Collaborator, Machine, Software).
 """
+from datetime import timedelta
+
 import pytest
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -124,5 +126,5 @@ def software(db):
         last_purchase_date=timezone.now(),
         on_use=5,
         departament='TI',
-        expires_at=timezone.now() + timezone.timedelta(days=365),
+        expires_at=timezone.now() + timedelta(days=365),
     )
