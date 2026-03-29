@@ -197,6 +197,10 @@ Todos os endpoints CRUD seguem o padrão DRF ModelViewSet:
 - `has_cellphone` ← exists(Cellphone where collaborator=self)
 - `email` ← first Email.email where collaborator=self
 
+> **IMPLEMENTAÇÃO**: Todos os SerializerMethodFields acima DEVEM usar `.all().exists()` ou `.all()[0]` para aproveitar o prefetch_related do controller. Nunca usar `.filter()` ou `.first()` (bypass do cache, causa N+1).
+
+> **NESTED CREATE**: POST `/api/collaborators/` com `emails` aninhados usa `EmailInputSerializer` (sem campo `collaborator`) — o FK é atribuído pelo service, não pelo cliente.
+
 ---
 
 ## Machine List Response
@@ -286,6 +290,8 @@ Todos os endpoints CRUD seguem o padrão DRF ModelViewSet:
   "machines_without_encryption": ["PC-TI-001", "PC-ADM-003"]
 }
 ```
+
+> **IMPLEMENTAÇÃO**: DashboardStatsView delega para `DashboardService.get_stats()` — controller nunca acessa ORM diretamente. O service usa `apps.get_model('reports', 'Report')` para evitar import cross-app (regra CLAUDE.md).
 
 ---
 

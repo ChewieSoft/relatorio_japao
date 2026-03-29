@@ -307,3 +307,49 @@ O desenvolvedor executa `pytest` e todos os testes passam — cobrindo repositor
 - Docker produção (gunicorn, nginx) → spec futura
 - Testes E2E (Playwright) → spec futura
 - Django Admin customizado com inlines → nice-to-have, não obrigatório
+
+## Lições de Implementação (Post-Mortem)
+
+Problemas encontrados durante implementação e 3 rodadas de code review que a spec original não previa. Documentados aqui para evitar recorrência em specs futuras.
+
+### Arquitetura
+
+| Lição | Impacto | Regra derivada |
+|-------|---------|---------------|
+| `on_delete=CASCADE` em FKs conflita com soft delete — parent deletado fisicamente cascateia e remove children | CRITICAL | Todas as FKs DEVEM usar `on_delete=PROTECT`. Documentar em data-model.md |
+| `unique_together` não considera soft-deleted — re-criar relação após soft delete causa IntegrityError | CRITICAL | Junction tables com soft delete DEVEM usar `UniqueConstraint` com `condition=Q(deleted_at__isnull=True)` |
+| Controller com ORM direto (DashboardStatsView) viola Lei de Demeter | HIGH | Mesmo endpoints simples de agregação DEVEM ter Service. Criar `DashboardService.get_stats()` |
+| Import cross-app (`from reports.repositories`) viola regra do CLAUDE.md | HIGH | Usar `django.apps.apps.get_model('app', 'Model')` para acessar modelos de outros apps |
+| `perform_create/update` sem `serializer.instance` faz DRF retornar validated_data bruto (sem id) | HIGH | BaseController DEVE atribuir `serializer.instance = self.service.create/update(...)` |
+
+### Serializers
+
+| Lição | Impacto | Regra derivada |
+|-------|---------|---------------|
+| `EmailSerializer` com `fields='__all__'` exige collaborator FK em nested creation — falha com 400 | HIGH | Nested input serializers DEVEM excluir FK do parent. Criar `EmailInputSerializer(exclude=['collaborator'])` |
+| `.first()` e `.filter()` em SerializerMethodField bypassa prefetch_related — causa N+1 | CRITICAL | SEMPRE usar `.all()` e indexar `[0]` para acessar relações prefetched |
+| `Service.update()` não faz pop de 'emails' — `setattr(instance, 'emails', ...)` gera erro Django | HIGH | Service.update() DEVE extrair campos de relação reversa antes de delegar ao repository |
+
+### Segurança
+
+| Lição | Impacto | Regra derivada |
+|-------|---------|---------------|
+| `SECRET_KEY` e `DB_PASSWORD` com default hardcoded funcionam em produção se .env está ausente | HIGH | Defaults apenas quando `DEBUG=True`. Em produção (`DEBUG=False`), crash no startup se ausente |
+
+### Infraestrutura Docker
+
+| Lição | Impacto | Regra derivada |
+|-------|---------|---------------|
+| Frontend sem Dockerfile impede `docker-compose up --build` com 3 serviços | HIGH | Todo serviço no docker-compose DEVE ter Dockerfile |
+| `entrypoint.sh` com CRLF (Windows) gera "no such file or directory" no container Linux | CRITICAL | Criar `.gitattributes` com `*.sh eol=lf` no diretório do backend |
+| `pg_isready -U admin` sem `-d` faz healthcheck tentar database "admin" (inexistente) | HIGH | Healthcheck DEVE incluir `-d ${POSTGRES_DB}` |
+| `version: '3.8'` no docker-compose.yml gera warning — atributo obsoleto | LOW | Remover `version:` do docker-compose.yml |
+| Sem auto-seed (loaddata) e auto-createsuperuser, desenvolvedor precisa de passos manuais | MEDIUM | `entrypoint.sh` deve rodar `loaddata` e criar superuser dev automaticamente |
+
+### Documentação
+
+| Lição | Impacto | Regra derivada |
+|-------|---------|---------------|
+| `collaboratormachine_set` nos exemplos mas `related_name='collaborator_machines'` no código | MEDIUM | Documentação DEVE usar o `related_name` definido no modelo, não o default Django |
+| `timezone.timedelta` não existe — gera AttributeError | LOW | Usar `datetime.timedelta` (importar de `datetime`, não de `django.utils.timezone`) |
+| Credenciais de dev (admin/admin123) não documentadas — desenvolvedor não sabe como logar | MEDIUM | README e quickstart DEVEM documentar credenciais de desenvolvimento |

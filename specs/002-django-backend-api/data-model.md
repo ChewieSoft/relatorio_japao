@@ -115,7 +115,7 @@
 
 | Campo | Tipo | Constraints |
 |-------|------|-------------|
-| `collaborator` | ForeignKey | on_delete=CASCADE, related_name='emails' |
+| `collaborator` | ForeignKey | on_delete=PROTECT, related_name='emails' |
 | `email` | CharField(255) | |
 | `remark` | CharField(255) | blank=True |
 | `email_creation` | DateTimeField | |
@@ -125,7 +125,7 @@
 
 | Campo | Tipo | Constraints |
 |-------|------|-------------|
-| `collaborator` | ForeignKey | on_delete=CASCADE, related_name='cellphones' |
+| `collaborator` | ForeignKey | on_delete=PROTECT, related_name='cellphones' |
 | `model` | CharField(255) | |
 | `operacional_system` | CharField(100) | |
 | `phone_number` | CharField(20) | |
@@ -139,7 +139,7 @@
 
 | Campo | Tipo | Constraints |
 |-------|------|-------------|
-| `collaborator` | ForeignKey | on_delete=CASCADE, related_name='wifi_records' |
+| `collaborator` | ForeignKey | on_delete=PROTECT, related_name='wifi_records' |
 | `wifi_name` | CharField(100) | |
 | `protection` | CharField(100) | |
 | `january` | BooleanField | default=False |
@@ -160,7 +160,7 @@
 
 | Campo | Tipo | Constraints |
 |-------|------|-------------|
-| `machine` | ForeignKey | on_delete=CASCADE, related_name='antivirus_records' |
+| `machine` | ForeignKey | on_delete=PROTECT, related_name='antivirus_records' |
 | `january_updated` .. `december_updated` | BooleanField x12 | default=False |
 | `january_check` .. `december_check` | BooleanField x12 | default=False |
 | `year` | IntegerField | |
@@ -169,7 +169,7 @@
 
 | Campo | Tipo | Constraints |
 |-------|------|-------------|
-| `machine` | ForeignKey | on_delete=CASCADE, related_name='servers' |
+| `machine` | ForeignKey | on_delete=PROTECT, related_name='servers' |
 | `have_backup` | BooleanField | default=False |
 | `backup_date` | DateTimeField | null=True, blank=True |
 
@@ -177,14 +177,14 @@
 
 | Campo | Tipo | Constraints |
 |-------|------|-------------|
-| `collaborator` | ForeignKey | on_delete=CASCADE, related_name='server_accesses' |
+| `collaborator` | ForeignKey | on_delete=PROTECT, related_name='server_accesses' |
 | `level01` .. `level06` | BooleanField x6 | default=False |
 
 ### ServerErpAccess (FK → Collaborator)
 
 | Campo | Tipo | Constraints |
 |-------|------|-------------|
-| `collaborator` | ForeignKey | on_delete=CASCADE, related_name='erp_accesses' |
+| `collaborator` | ForeignKey | on_delete=PROTECT, related_name='erp_accesses' |
 | `purchase` | BooleanField | default=False |
 | `sale` | BooleanField | default=False |
 | `production_control` | BooleanField | default=False |
@@ -194,7 +194,7 @@
 
 | Campo | Tipo | Constraints |
 |-------|------|-------------|
-| `machine` | ForeignKey | on_delete=CASCADE, related_name='data_destroyed_records' |
+| `machine` | ForeignKey | on_delete=PROTECT, related_name='data_destroyed_records' |
 | `when_data_is_destroyed` | DateTimeField | |
 | `i_can_destroy_data` | BooleanField | default=False |
 
@@ -202,7 +202,7 @@
 
 | Campo | Tipo | Constraints |
 |-------|------|-------------|
-| `collaborator` | ForeignKey | on_delete=CASCADE, related_name='pen_drives' |
+| `collaborator` | ForeignKey | on_delete=PROTECT, related_name='pen_drives' |
 | `checked_date` | DateTimeField | |
 | `have_virus` | BooleanField | default=False |
 
@@ -214,21 +214,21 @@
 
 | Campo | Tipo | Constraints |
 |-------|------|-------------|
-| `collaborator` | ForeignKey | on_delete=CASCADE |
-| `software` | ForeignKey | on_delete=CASCADE |
+| `collaborator` | ForeignKey | on_delete=PROTECT |
+| `software` | ForeignKey | on_delete=PROTECT |
 
 **Herda**: BaseModel
-**Constraint**: unique_together = ('collaborator', 'software')
+**Constraint**: UniqueConstraint(fields=['collaborator', 'software'], condition=Q(deleted_at__isnull=True), name='unique_active_collaborator_software')
 
 ### CollaboratorMachine
 
 | Campo | Tipo | Constraints |
 |-------|------|-------------|
-| `collaborator` | ForeignKey | on_delete=CASCADE |
-| `machine` | ForeignKey | on_delete=CASCADE |
+| `collaborator` | ForeignKey | on_delete=PROTECT |
+| `machine` | ForeignKey | on_delete=PROTECT |
 
 **Herda**: BaseModel
-**Constraint**: unique_together = ('collaborator', 'machine')
+**Constraint**: UniqueConstraint(fields=['collaborator', 'machine'], condition=Q(deleted_at__isnull=True), name='unique_active_collaborator_machine')
 
 ---
 

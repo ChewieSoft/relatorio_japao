@@ -257,3 +257,20 @@ backend/
 | 24 campos booleanos em AntiVirus (tedioso, propenso a typo) | Baixo — erros de digitação | Copiar nomes exatos do PLANO_IMPLEMENTACAO.md |
 | Nested creation falha sem transação | Médio — dados inconsistentes | @transaction.atomic obrigatório no CollaboratorService |
 | Docker compose não sobe na primeira vez | Baixo — config issue | Testar incrementalmente: db primeiro, depois backend |
+
+## Riscos Realizados (Post-Mortem)
+
+Problemas que aconteceram e não estavam no risk assessment original:
+
+| Risco realizado | Impacto real | Como foi resolvido |
+|----------------|-------------|-------------------|
+| N+1 em serializers: .filter()/.first() ignora prefetch | CRITICAL — 60+ queries extras por página | Usar .all()[0] e .all().exists() |
+| on_delete=CASCADE + soft delete = children perdidos | CRITICAL — data loss em cascade | Mudar todas FKs para PROTECT |
+| unique_together bloqueia re-criação após soft delete | CRITICAL — IntegrityError em runtime | UniqueConstraint com condition=Q(deleted_at__isnull=True) |
+| perform_create sem serializer.instance | HIGH — POST retorna sem id | Atribuir serializer.instance = service.create() |
+| EmailSerializer com FK em nested create | HIGH — 400 em POST com emails | Criar EmailInputSerializer sem collaborator |
+| entrypoint.sh CRLF no Windows | HIGH — container não inicia | .gitattributes com *.sh eol=lf |
+| SECRET_KEY com default em produção | HIGH — segurança comprometida | Default só quando DEBUG=True |
+| pg_isready sem -d flag | MEDIUM — healthcheck falha | Adicionar -d ${POSTGRES_DB} |
+| Import cross-app (core→reports) | MEDIUM — viola regra CLAUDE.md | apps.get_model() |
+| timezone.timedelta não existe | LOW — AttributeError em fixture | Usar datetime.timedelta |

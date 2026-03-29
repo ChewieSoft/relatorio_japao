@@ -128,3 +128,51 @@ machines_without_encryption = Machine.objects.filter(
 **Rationale**: `hostname` é um dado real de inventário (nome de rede/NetBIOS do computador). Não é derivável dos campos existentes (model, service_tag são dados de hardware, não de rede). O frontend já espera este campo. Adicionar ao modelo é mais limpo que fabricá-lo no serializer.
 
 **Alternative considered**: SerializerMethodField derivando de model+service_tag → rejeitado porque hostname é um dado independente no domínio de TI.
+
+---
+
+## Decisões Pós-Implementação (Code Review)
+
+As decisões abaixo foram tomadas durante 3 rodadas de code review automatizado.
+
+## R8: on_delete=PROTECT em todas as ForeignKeys
+
+**Decision**: Todas as FKs usam `on_delete=models.PROTECT` em vez de CASCADE.
+
+**Rationale**: CASCADE faz delete físico em cascata se o parent for removido fisicamente (via admin, management command, ou DB). Isso conflita com o padrão soft delete — children seriam perdidos permanentemente. PROTECT impede delete físico do parent, forçando uso do caminho soft delete.
+
+## R9: UniqueConstraint parcial para junction tables
+
+**Decision**: `CollaboratorSoftware` e `CollaboratorMachine` usam `UniqueConstraint` com `condition=Q(deleted_at__isnull=True)` em vez de `unique_together`.
+
+**Rationale**: Com soft delete, `unique_together` bloqueia re-criação da mesma relação após soft delete (o registro deletado ainda existe no DB). O partial unique index permite re-criar relações ativas enquanto mantém unicidade.
+
+## R10: DashboardService obrigatório
+
+**Decision**: DashboardStatsView delega para `DashboardService.get_stats()`. Controller nunca acessa ORM diretamente.
+
+**Rationale**: Mesmo para endpoints simples de agregação, a regra "Controllers chamando ORM diretamente" do CLAUDE.md se aplica. Usar `apps.get_model('reports', 'Report')` no service para evitar import cross-app.
+
+## R11: EmailInputSerializer para nested creation
+
+**Decision**: Criar `EmailInputSerializer` separado (sem campo `collaborator`) para uso em `CollaboratorCreateSerializer`.
+
+**Rationale**: `EmailSerializer` usa `fields='__all__'` que inclui `collaborator` como campo obrigatório. Em nested creation, o collaborator é atribuído pelo service, não pelo cliente. Sem serializer separado, o POST falha com 400 exigindo collaborator em cada email.
+
+## R12: Prefetch — usar .all() não .filter()/.first()
+
+**Decision**: SerializerMethodFields que acessam relações prefetched devem usar `obj.relation.all()` e indexar com `[0]`, nunca `.filter()` ou `.first()`.
+
+**Rationale**: `.filter()` e `.first()` emitem novas queries ao DB, ignorando o cache do prefetch_related. Isso transforma prefetch em N+1. `.all()` usa o cache prefetched.
+
+## R13: Service.update() deve extrair campos de relação reversa
+
+**Decision**: `CollaboratorService.update()` faz `data.pop('emails', None)` antes de delegar ao repository.
+
+**Rationale**: Se o cliente enviar `emails` no PUT/PATCH, `BaseRepository.update()` tenta `setattr(instance, 'emails', ...)` que falha porque `emails` é uma relação reversa do Django, não um campo editável.
+
+## R14: perform_create/update deve setar serializer.instance
+
+**Decision**: `BaseController.perform_create()` atribui `serializer.instance = self.service.create(...)`.
+
+**Rationale**: Sem `serializer.instance`, o DRF retorna `validated_data` bruto na resposta — sem `id`, `created_at`, ou qualquer campo gerado pelo banco. perform_update usa `serializer.instance.pk` (já disponível) em vez de `self.get_object().pk` (query duplicada).

@@ -14,12 +14,19 @@
 # 1. Copiar variáveis de ambiente
 cp .env.example .env
 
-# 2. Subir todos os serviços
+# 2. Subir todos os serviços (db + backend + frontend)
 docker-compose up --build
-
-# Superusuário e fixtures são criados automaticamente pelo entrypoint.
-# Credenciais padrão: admin / admin123
 ```
+
+O entrypoint do backend executa automaticamente:
+1. Aguarda PostgreSQL (pg_isready com `-d ${POSTGRES_DB}`)
+2. Aplica migrações (`migrate --noinput`)
+3. Carrega fixtures (53 objetos: colaboradores, máquinas, software, 19 relatórios)
+4. Cria superusuário dev se não existir
+
+**Credenciais de desenvolvimento**: `admin` / `admin123`
+
+> **Windows**: `entrypoint.sh` DEVE ter line endings LF (não CRLF). O arquivo `backend/.gitattributes` garante isso via `*.sh eol=lf`. Se o container falhar com "no such file or directory", execute: `sed -i 's/\r$//' backend/entrypoint.sh`
 
 ## Acessos
 
