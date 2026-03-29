@@ -150,6 +150,7 @@ class CollaboratorService(BaseService):
         """
         software_ids = data.pop('software_ids', None)
         machine_ids = data.pop('machine_ids', None)
+        data.pop('emails', None)  # Nested emails nao sao atualizaveis via update
         instance = self.repository.get_by_id(pk)
         self.repository.update(instance, **data)
         if software_ids is not None:
