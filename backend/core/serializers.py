@@ -173,10 +173,23 @@ class SoftwareListSerializer(serializers.ModelSerializer):
 
 
 class EmailSerializer(BaseSerializer):
-    """Serializer para Email."""
+    """Serializer para Email (CRUD standalone via /api/emails/)."""
 
     class Meta(BaseSerializer.Meta):
         model = Email
+
+
+class EmailInputSerializer(serializers.ModelSerializer):
+    """Serializer de input para emails aninhados em Collaborator.
+
+    Exclui o campo collaborator pois e atribuido pelo service,
+    nao pelo cliente. Sem isso, nested creation exigiria collaborator
+    em cada item do array emails, causando erro de validacao.
+    """
+
+    class Meta:
+        model = Email
+        exclude = ['collaborator', 'created_at', 'updated_at', 'deleted_at']
 
 
 class CellphoneSerializer(BaseSerializer):
@@ -212,10 +225,12 @@ class CollaboratorCreateSerializer(serializers.ModelSerializer):
     """Serializer de criacao de colaborador com nested emails.
 
     Aceita lista de emails para criacao atomica via service.
+    Usa EmailInputSerializer (sem campo collaborator) para evitar
+    que validacao exija collaborator em cada email aninhado.
     Aceita software_ids e machine_ids para relacoes N:N.
     """
 
-    emails = EmailSerializer(many=True, required=False)
+    emails = EmailInputSerializer(many=True, required=False)
     software_ids = serializers.ListField(
         child=serializers.IntegerField(), required=False
     )
