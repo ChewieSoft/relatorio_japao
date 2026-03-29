@@ -204,9 +204,9 @@
 
 - [x] T073 [P] Verify all docstrings are in PT-BR (Google Style for Python) across all new files in backend/
 - [x] T074 [P] Run `docker-compose up --build` clean test: remove volumes, rebuild, verify all services start, loaddata works
-- [ ] T075 Disable MSW in frontend (`packages/frontend/src/main.tsx`) and verify all 6 pages work with real backend: Login, Dashboard, Collaborators, Machines, Software, Reports
-- [ ] T076 Compare each endpoint response against MSW mock response field-by-field for Collaborator, Machine, Software list endpoints
-- [ ] T077 Run quickstart.md validation: follow all steps from scratch on clean environment
+- [x] T075 Disable MSW in frontend (`packages/frontend/src/main.tsx`) and verify all 6 pages work with real backend: Login, Dashboard, Collaborators, Machines, Software, Reports
+- [x] T076 Compare each endpoint response against MSW mock response field-by-field for Collaborator, Machine, Software list endpoints
+- [x] T077 Run quickstart.md validation: follow all steps from scratch on clean environment
 
 ---
 
