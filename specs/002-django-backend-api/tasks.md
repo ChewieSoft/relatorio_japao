@@ -78,12 +78,12 @@
 
 ### Implementation for User Story 2
 
-- [ ] T024 [P] [US2] Create UserSerializer (id, username, email, is_staff) and RegisterSerializer (username, email, password with write_only) in `backend/accounts/serializers.py`
-- [ ] T025 [P] [US2] Create AuthService in `backend/accounts/services.py` with register method (creates user, checks is_staff permission)
-- [ ] T026 [US2] Create auth views in `backend/accounts/controllers.py`: UserView (GET /me/ → IsAuthenticated, returns UserSerializer), RegisterView (POST → IsAdminUser, uses AuthService)
-- [ ] T027 [US2] Create `backend/accounts/urls.py` with 5 routes: login/ (TokenObtainPairView), refresh/ (TokenRefreshView), register/ (RegisterView), me/ (UserView), logout/ (TokenBlacklistView from simplejwt)
-- [ ] T028 [US2] Update `backend/config/urls.py` to include `path('api/auth/', include('accounts.urls'))`
-- [ ] T029 [US2] Verify auth flow end-to-end: login returns {access, refresh}, me returns user data, refresh returns new access, logout blacklists token, unauthenticated requests get 401
+- [x] T024 [P] [US2] Create UserSerializer (id, username, email, is_staff) and RegisterSerializer (username, email, password with write_only) in `backend/accounts/serializers.py`
+- [x] T025 [P] [US2] Create AuthService in `backend/accounts/services.py` with register method (creates user, checks is_staff permission)
+- [x] T026 [US2] Create auth views in `backend/accounts/controllers.py`: UserView (GET /me/ → IsAuthenticated, returns UserSerializer), RegisterView (POST → IsAdminUser, uses AuthService)
+- [x] T027 [US2] Create `backend/accounts/urls.py` with 5 routes: login/ (TokenObtainPairView), refresh/ (TokenRefreshView), register/ (RegisterView), me/ (UserView), logout/ (TokenBlacklistView from simplejwt)
+- [x] T028 [US2] Update `backend/config/urls.py` to include `path('api/auth/', include('accounts.urls'))`
+- [x] T029 [US2] Verify auth flow end-to-end: login returns {access, refresh}, me returns user data, refresh returns new access, logout blacklists token, unauthenticated requests get 401
 
 **Checkpoint**: Full JWT auth working. Frontend Login page can authenticate against real backend.
 
@@ -97,22 +97,22 @@
 
 ### Implementation for User Story 3
 
-- [ ] T030 [P] [US3] Create CollaboratorRepository in `backend/core/repositories.py` extending BaseRepository: get_active(), get_with_emails(pk), get_domain_users(), model=Collaborator
-- [ ] T031 [P] [US3] Create MachineRepository in `backend/core/repositories.py` extending BaseRepository: override get_all() with prefetch_related('collaboratormachine_set__collaborator', 'antivirus_records'), model=Machine
-- [ ] T032 [P] [US3] Create SoftwareRepository in `backend/core/repositories.py` extending BaseRepository: model=Software
-- [ ] T033 [P] [US3] Create CollaboratorService in `backend/core/services.py` extending BaseService: repository=CollaboratorRepository
-- [ ] T034 [P] [US3] Create MachineService in `backend/core/services.py` extending BaseService: repository=MachineRepository
-- [ ] T035 [P] [US3] Create SoftwareService in `backend/core/services.py` extending BaseService: repository=SoftwareRepository
-- [ ] T036 [US3] Create CollaboratorListSerializer in `backend/core/serializers.py` with field mapping: name(source='full_name'), department(source='office'), has_internet_access(source='perm_acess_internet'), has_server_access(SerializerMethodField), has_erp_access(SerializerMethodField), has_cellphone(SerializerMethodField), email(SerializerMethodField → first email)
-- [ ] T037 [US3] Create MachineListSerializer in `backend/core/serializers.py` with field mapping: hostname(direct), operational_system(source='operacional_system'), encrypted(SerializerMethodField: crypto_disk OR crypto_usb OR crypto_memory_card), antivirus(SerializerMethodField: exists AntiVirus year=current), collaborator_id/collaborator_name(SerializerMethodField via CollaboratorMachine), machine_type(source='type')
-- [ ] T038 [US3] Create SoftwareListSerializer in `backend/core/serializers.py` with field mapping: license_key(source='key'), license_type(source='type_licence'), in_use(source='on_use'), expires_at(direct)
-- [ ] T039 [US3] Create CollaboratorController in `backend/core/controllers.py` extending BaseController: service=CollaboratorService, filterset_fields=[status, fired, office, admin_privilege], search_fields=[full_name, domain_user], ordering_fields=[full_name, date_hired], get_serializer_class returns CollaboratorListSerializer for list action
-- [ ] T040 [US3] Create MachineController in `backend/core/controllers.py` extending BaseController: service=MachineService, get_queryset with prefetch_related('collaboratormachine_set__collaborator', 'antivirus_records'), filterset_fields=[type, sold_out, crypto_disk], search_fields=[model, service_tag, ip]
-- [ ] T041 [US3] Create SoftwareController in `backend/core/controllers.py` extending BaseController: service=SoftwareService, filterset_fields=[type_licence, departament], search_fields=[software_name, key]
-- [ ] T042 [US3] Create FilterSets for Collaborator, Machine, Software in `backend/core/filters.py`
-- [ ] T043 [US3] Create `backend/core/urls.py` with DefaultRouter registering CollaboratorController('collaborators'), MachineController('machines'), SoftwareController('software')
-- [ ] T044 [US3] Update `backend/config/urls.py` to include `path('api/', include('core.urls'))`
-- [ ] T045 [US3] Verify all 3 list endpoints return exact field names and paginated format matching MSW mock responses (compare response shape field-by-field)
+- [x] T030 [P] [US3] Create CollaboratorRepository in `backend/core/repositories.py` extending BaseRepository: get_active(), get_with_emails(pk), get_domain_users(), model=Collaborator
+- [x] T031 [P] [US3] Create MachineRepository in `backend/core/repositories.py` extending BaseRepository: override get_all() with prefetch_related('collaboratormachine_set__collaborator', 'antivirus_records'), model=Machine
+- [x] T032 [P] [US3] Create SoftwareRepository in `backend/core/repositories.py` extending BaseRepository: model=Software
+- [x] T033 [P] [US3] Create CollaboratorService in `backend/core/services.py` extending BaseService: repository=CollaboratorRepository
+- [x] T034 [P] [US3] Create MachineService in `backend/core/services.py` extending BaseService: repository=MachineRepository
+- [x] T035 [P] [US3] Create SoftwareService in `backend/core/services.py` extending BaseService: repository=SoftwareRepository
+- [x] T036 [US3] Create CollaboratorListSerializer in `backend/core/serializers.py` with field mapping: name(source='full_name'), department(source='office'), has_internet_access(source='perm_acess_internet'), has_server_access(SerializerMethodField), has_erp_access(SerializerMethodField), has_cellphone(SerializerMethodField), email(SerializerMethodField → first email)
+- [x] T037 [US3] Create MachineListSerializer in `backend/core/serializers.py` with field mapping: hostname(direct), operational_system(source='operacional_system'), encrypted(SerializerMethodField: crypto_disk OR crypto_usb OR crypto_memory_card), antivirus(SerializerMethodField: exists AntiVirus year=current), collaborator_id/collaborator_name(SerializerMethodField via CollaboratorMachine), machine_type(source='type')
+- [x] T038 [US3] Create SoftwareListSerializer in `backend/core/serializers.py` with field mapping: license_key(source='key'), license_type(source='type_licence'), in_use(source='on_use'), expires_at(direct)
+- [x] T039 [US3] Create CollaboratorController in `backend/core/controllers.py` extending BaseController: service=CollaboratorService, filterset_fields=[status, fired, office, admin_privilege], search_fields=[full_name, domain_user], ordering_fields=[full_name, date_hired], get_serializer_class returns CollaboratorListSerializer for list action
+- [x] T040 [US3] Create MachineController in `backend/core/controllers.py` extending BaseController: service=MachineService, get_queryset with prefetch_related('collaboratormachine_set__collaborator', 'antivirus_records'), filterset_fields=[type, sold_out, crypto_disk], search_fields=[model, service_tag, ip]
+- [x] T041 [US3] Create SoftwareController in `backend/core/controllers.py` extending BaseController: service=SoftwareService, filterset_fields=[type_licence, departament], search_fields=[software_name, key]
+- [x] T042 [US3] Create FilterSets for Collaborator, Machine, Software in `backend/core/filters.py`
+- [x] T043 [US3] Create `backend/core/urls.py` with DefaultRouter registering CollaboratorController('collaborators'), MachineController('machines'), SoftwareController('software')
+- [x] T044 [US3] Update `backend/config/urls.py` to include `path('api/', include('core.urls'))`
+- [x] T045 [US3] Verify all 3 list endpoints return exact field names and paginated format matching MSW mock responses (compare response shape field-by-field)
 
 **Checkpoint**: Frontend Collaborators, Machines, Software pages display real data from backend (disable MSW to verify).
 
@@ -126,18 +126,18 @@
 
 ### Implementation for User Story 4
 
-- [ ] T046 [P] [US4] Create CollaboratorDetailSerializer and CollaboratorCreateSerializer (with nested emails) in `backend/core/serializers.py`
-- [ ] T047 [P] [US4] Create MachineDetailSerializer and MachineCreateSerializer in `backend/core/serializers.py`
-- [ ] T048 [P] [US4] Create SoftwareDetailSerializer and SoftwareCreateSerializer in `backend/core/serializers.py`
-- [ ] T049 [US4] Update CollaboratorService.create() in `backend/core/services.py` with @transaction.atomic nested creation: pop 'emails' from data, create Collaborator, create Emails with FK
-- [ ] T050 [US4] Update CollaboratorController.get_serializer_class() in `backend/core/controllers.py` to return Detail for retrieve, Create for create/update actions
-- [ ] T051 [P] [US4] Create remaining 9 repositories in `backend/core/repositories.py`: EmailRepository, CellphoneRepository, WifiRepository, AntiVirusRepository, ServerRepository, ServerAccessRepository, ServerErpAccessRepository, DataDestroyedRepository, PenDriveRepository (all extend BaseRepository with model assignment)
-- [ ] T052 [P] [US4] Create remaining 9 services in `backend/core/services.py`: EmailService, CellphoneService, WifiService, AntiVirusService, ServerService, ServerAccessService, ServerErpAccessService, DataDestroyedService, PenDriveService (all extend BaseService with repository assignment)
-- [ ] T053 [P] [US4] Create serializers for all 9 dependent entities in `backend/core/serializers.py` (EmailSerializer, CellphoneSerializer, WifiSerializer, AntiVirusSerializer, ServerSerializer, ServerAccessSerializer, ServerErpAccessSerializer, DataDestroyedSerializer, PenDriveSerializer) extending BaseSerializer
-- [ ] T054 [US4] Create controllers for all 9 dependent entities in `backend/core/controllers.py` (EmailController, CellphoneController, etc.) extending BaseController with appropriate service, filterset_fields, search_fields per contracts/api-endpoints.md
-- [ ] T055 [US4] Update `backend/core/urls.py` to register all 12 controllers in DefaultRouter: emails, cellphones, wifi, antivirus, servers, server-access, erp-access, data-destroyed, pen-drives
-- [ ] T056 [US4] Verify full CRUD flow: POST creates, GET retrieves, PUT updates, DELETE soft-deletes (deleted_at set, record hidden from list). Verify nested creation of Collaborator + Emails in single request.
-- [ ] T056b [US4] Add management of N:N junction tables via CollaboratorDetailSerializer: add writable `software_ids` and `machine_ids` fields (list of PKs) that create/update CollaboratorSoftware and CollaboratorMachine entries in CollaboratorService.create() and update() with @transaction.atomic
+- [x] T046 [P] [US4] Create CollaboratorDetailSerializer and CollaboratorCreateSerializer (with nested emails) in `backend/core/serializers.py`
+- [x] T047 [P] [US4] Create MachineDetailSerializer and MachineCreateSerializer in `backend/core/serializers.py`
+- [x] T048 [P] [US4] Create SoftwareDetailSerializer and SoftwareCreateSerializer in `backend/core/serializers.py`
+- [x] T049 [US4] Update CollaboratorService.create() in `backend/core/services.py` with @transaction.atomic nested creation: pop 'emails' from data, create Collaborator, create Emails with FK
+- [x] T050 [US4] Update CollaboratorController.get_serializer_class() in `backend/core/controllers.py` to return Detail for retrieve, Create for create/update actions
+- [x] T051 [P] [US4] Create remaining 9 repositories in `backend/core/repositories.py`: EmailRepository, CellphoneRepository, WifiRepository, AntiVirusRepository, ServerRepository, ServerAccessRepository, ServerErpAccessRepository, DataDestroyedRepository, PenDriveRepository (all extend BaseRepository with model assignment)
+- [x] T052 [P] [US4] Create remaining 9 services in `backend/core/services.py`: EmailService, CellphoneService, WifiService, AntiVirusService, ServerService, ServerAccessService, ServerErpAccessService, DataDestroyedService, PenDriveService (all extend BaseService with repository assignment)
+- [x] T053 [P] [US4] Create serializers for all 9 dependent entities in `backend/core/serializers.py` (EmailSerializer, CellphoneSerializer, WifiSerializer, AntiVirusSerializer, ServerSerializer, ServerAccessSerializer, ServerErpAccessSerializer, DataDestroyedSerializer, PenDriveSerializer) extending BaseSerializer
+- [x] T054 [US4] Create controllers for all 9 dependent entities in `backend/core/controllers.py` (EmailController, CellphoneController, etc.) extending BaseController with appropriate service, filterset_fields, search_fields per contracts/api-endpoints.md
+- [x] T055 [US4] Update `backend/core/urls.py` to register all 12 controllers in DefaultRouter: emails, cellphones, wifi, antivirus, servers, server-access, erp-access, data-destroyed, pen-drives
+- [x] T056 [US4] Verify full CRUD flow: POST creates, GET retrieves, PUT updates, DELETE soft-deletes (deleted_at set, record hidden from list). Verify nested creation of Collaborator + Emails in single request.
+- [x] T056b [US4] Add management of N:N junction tables via CollaboratorDetailSerializer: add writable `software_ids` and `machine_ids` fields (list of PKs) that create/update CollaboratorSoftware and CollaboratorMachine entries in CollaboratorService.create() and update() with @transaction.atomic
 
 **Checkpoint**: All 12 CRUD endpoints working. Soft delete verified. Nested creation verified.
 
@@ -151,9 +151,9 @@
 
 ### Implementation for User Story 5
 
-- [ ] T057 [US5] Create DashboardStatsView (APIView, IsAuthenticated) in `backend/core/controllers.py` with aggregation queries: active_collaborators (status=True, fired=False), total_collaborators, total_machines, total_software, pending_reports (status='pending'), total_reports, machines_without_encryption (list of hostname where all crypto_* are False)
-- [ ] T058 [US5] Add dashboard URL to `backend/core/urls.py`: path('dashboard/stats/', DashboardStatsView.as_view())
-- [ ] T059 [US5] Verify dashboard response matches exact contract format from contracts/api-endpoints.md — all field names and types correct
+- [x] T057 [US5] Create DashboardStatsView (APIView, IsAuthenticated) in `backend/core/controllers.py` with aggregation queries: active_collaborators (status=True, fired=False), total_collaborators, total_machines, total_software, pending_reports (status='pending'), total_reports, machines_without_encryption (list of hostname where all crypto_* are False)
+- [x] T058 [US5] Add dashboard URL to `backend/core/urls.py`: path('dashboard/stats/', DashboardStatsView.as_view())
+- [x] T059 [US5] Verify dashboard response matches exact contract format from contracts/api-endpoints.md — all field names and types correct
 
 **Checkpoint**: Frontend Dashboard page displays real stats from backend.
 
@@ -167,13 +167,13 @@
 
 ### Implementation for User Story 6
 
-- [ ] T060 [P] [US6] Create ReportRepository in `backend/reports/repositories.py` as standalone class (NOT extending BaseRepository — Report não herda BaseModel, não tem soft_delete). Methods: get_all(), get_by_number(number), update_status(instance, status, last_generated)
-- [ ] T061 [P] [US6] Create ReportService in `backend/reports/services.py` with generate(number) method: find report by number, set status='generated', set last_generated=now()
-- [ ] T062 [P] [US6] Create ReportSerializer in `backend/reports/serializers.py` (id, number, name, name_jp, category, last_generated, status)
-- [ ] T063 [US6] Create ReportListController (ListAPIView) and ReportGenerateView (APIView, POST) in `backend/reports/controllers.py`
-- [ ] T064 [US6] Create `backend/reports/urls.py` with: reports/ (ReportListController), reports/<str:number>/generate/ (ReportGenerateView). Add placeholder for reports/<str:number>/?format=pdf|xlsx (returns 501 Not Implemented for now — spec 003)
-- [ ] T065 [US6] Update `backend/config/urls.py` to include `path('api/', include('reports.urls'))`
-- [ ] T066 [US6] Verify: GET /api/reports/ returns 19 reports with correct fields. POST /api/reports/08/generate/ changes status to 'generated' and sets last_generated.
+- [x] T060 [P] [US6] Create ReportRepository in `backend/reports/repositories.py` as standalone class (NOT extending BaseRepository — Report não herda BaseModel, não tem soft_delete). Methods: get_all(), get_by_number(number), update_status(instance, status, last_generated)
+- [x] T061 [P] [US6] Create ReportService in `backend/reports/services.py` with generate(number) method: find report by number, set status='generated', set last_generated=now()
+- [x] T062 [P] [US6] Create ReportSerializer in `backend/reports/serializers.py` (id, number, name, name_jp, category, last_generated, status)
+- [x] T063 [US6] Create ReportListController (ListAPIView) and ReportGenerateView (APIView, POST) in `backend/reports/controllers.py`
+- [x] T064 [US6] Create `backend/reports/urls.py` with: reports/ (ReportListController), reports/<str:number>/generate/ (ReportGenerateView). Add placeholder for reports/<str:number>/?format=pdf|xlsx (returns 501 Not Implemented for now — spec 003)
+- [x] T065 [US6] Update `backend/config/urls.py` to include `path('api/', include('reports.urls'))`
+- [x] T066 [US6] Verify: GET /api/reports/ returns 19 reports with correct fields. POST /api/reports/08/generate/ changes status to 'generated' and sets last_generated.
 
 **Checkpoint**: Frontend Reports page displays real report list. Generate button works.
 
@@ -187,11 +187,11 @@
 
 ### Implementation for User Story 7
 
-- [ ] T067 [P] [US7] Create conftest.py in `backend/` with pytest-django fixtures: api_client (authenticated), collaborator factory, machine factory, software factory
+- [x] T067 [P] [US7] Create conftest.py in `backend/` with pytest-django fixtures: api_client (authenticated), collaborator factory, machine factory, software factory
 - [ ] T068 [P] [US7] Create repository tests in `backend/core/tests/test_repositories.py`: test_create_collaborator, test_soft_delete, test_get_all_excludes_deleted, test_filter, test_get_by_id, test_machine_prefetch_related
 - [ ] T069 [P] [US7] Create service tests in `backend/core/tests/test_services.py`: test_collaborator_nested_creation_with_emails, test_nested_creation_atomic_rollback, test_soft_delete_via_service
-- [ ] T070 [P] [US7] Create controller tests in `backend/core/tests/test_controllers.py`: test_list_collaborators_paginated, test_list_returns_correct_field_names, test_create_collaborator, test_soft_delete_via_api, test_unauthenticated_returns_401, test_search_filter, test_machine_list_computed_fields
-- [ ] T071 [P] [US7] Create auth tests in `backend/accounts/tests.py`: test_login_returns_tokens, test_me_returns_user, test_refresh_returns_new_access, test_logout_blacklists_token, test_register_admin_only, test_protected_route_without_token_returns_401
+- [x] T070 [P] [US7] Create controller tests in `backend/core/tests/test_controllers.py`: test_list_collaborators_paginated, test_list_returns_correct_field_names, test_create_collaborator, test_soft_delete_via_api, test_unauthenticated_returns_401, test_search_filter, test_machine_list_computed_fields
+- [x] T071 [P] [US7] Create auth tests in `backend/accounts/tests.py`: test_login_returns_tokens, test_me_returns_user, test_refresh_returns_new_access, test_logout_blacklists_token, test_register_admin_only, test_protected_route_without_token_returns_401
 - [ ] T072 [US7] Run full test suite: `cd backend && pytest` — verify 100% pass rate
 
 **Checkpoint**: All tests pass. Backend integrity validated.
