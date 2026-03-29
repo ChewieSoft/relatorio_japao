@@ -45,7 +45,7 @@
 - [x] T013 Create 9 dependent entity models in `backend/core/models.py`: Email (FK Collaborator, related_name='emails'), Cellphone (FK Collaborator, related_name='cellphones'), Wifi (12 month booleans + year, FK Collaborator), AntiVirus (12 updated + 12 check booleans + year, FK Machine), Server (FK Machine), ServerAccess (6 level booleans, FK Collaborator), ServerErpAccess (FK Collaborator), DataDestroyed (FK Machine), PenDrive (FK Collaborator)
 - [x] T014 Create 2 junction table models in `backend/core/models.py`: CollaboratorSoftware (unique_together collaborator+software), CollaboratorMachine (unique_together collaborator+machine)
 - [x] T015 Create Report model in `backend/reports/models.py` (number CharField unique, name, name_jp, category, status with choices pending/generated/sent, last_generated DateTimeField null) — does NOT inherit BaseModel
-- [ ] T016 Run `python manage.py makemigrations` and `python manage.py migrate` to create all 15 tables (14 core + Report)
+- [x] T016 Run `python manage.py makemigrations` and `python manage.py migrate` to create all 15 tables (14 core + Report)
 - [x] T017 [P] Register all 14 core models in `backend/core/admin.py` with list_display, search_fields, list_filter per model
 - [x] T018 [P] Register Report model in `backend/reports/admin.py` with list_display, search_fields
 - [x] T019 Create `backend/fixtures/sample_data.json` with test data: at least 5 Collaborators (with emails, cellphones), 5 Machines (with AntiVirus records), 5 Software, 19 Report seeds (all with status='pending'), plus junction table entries. Use model field names (full_name, office, not frontend aliases)
@@ -192,7 +192,7 @@
 - [ ] T069 [P] [US7] Create service tests in `backend/core/tests/test_services.py`: test_collaborator_nested_creation_with_emails, test_nested_creation_atomic_rollback, test_soft_delete_via_service
 - [x] T070 [P] [US7] Create controller tests in `backend/core/tests/test_controllers.py`: test_list_collaborators_paginated, test_list_returns_correct_field_names, test_create_collaborator, test_soft_delete_via_api, test_unauthenticated_returns_401, test_search_filter, test_machine_list_computed_fields
 - [x] T071 [P] [US7] Create auth tests in `backend/accounts/tests.py`: test_login_returns_tokens, test_me_returns_user, test_refresh_returns_new_access, test_logout_blacklists_token, test_register_admin_only, test_protected_route_without_token_returns_401
-- [ ] T072 [US7] Run full test suite: `cd backend && pytest` — verify 100% pass rate
+- [x] T072 [US7] Run full test suite: `cd backend && pytest` — verify 100% pass rate
 
 **Checkpoint**: All tests pass. Backend integrity validated.
 
@@ -202,8 +202,8 @@
 
 **Purpose**: Validação final, documentação sincronizada, integração frontend-backend.
 
-- [ ] T073 [P] Verify all docstrings are in PT-BR (Google Style for Python) across all new files in backend/
-- [ ] T074 [P] Run `docker-compose up --build` clean test: remove volumes, rebuild, verify all services start, loaddata works
+- [x] T073 [P] Verify all docstrings are in PT-BR (Google Style for Python) across all new files in backend/
+- [x] T074 [P] Run `docker-compose up --build` clean test: remove volumes, rebuild, verify all services start, loaddata works
 - [ ] T075 Disable MSW in frontend (`packages/frontend/src/main.tsx`) and verify all 6 pages work with real backend: Login, Dashboard, Collaborators, Machines, Software, Reports
 - [ ] T076 Compare each endpoint response against MSW mock response field-by-field for Collaborator, Machine, Software list endpoints
 - [ ] T077 Run quickstart.md validation: follow all steps from scratch on clean environment
