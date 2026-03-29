@@ -67,8 +67,8 @@ class BaseModel(models.Model):
 | # | Modelo | Campos | Unique |
 |---|--------|--------|--------|
 | 1 | **Collaborator** | full_name, domain_user, status (Bool), perm_acess_internet (Bool), date_hired (DateTime), fired (Bool), date_fired (DateTime?), acess_wifi (Bool), admin_privilege (Bool), office | full_name, domain_user |
-| 2 | **Machine** | model, type, service_tag, operacional_system, ram_memory, disk_memory, ip, mac_address, administrator, cod_jdb, date_purchase (DateTime), quantity (Int), crypto_disk (Bool), crypto_usb (Bool), crypto_memory_card (Bool), sold_out (Bool), date_sold_out (DateTime?) | service_tag, ip, mac_address |
-| 3 | **Software** | software_name (?), key, quantity (Int), type_licence, quantity_purchase (Int), last_purchase_date (DateTime), on_use (Int), departament, observation (Text) | - |
+| 2 | **Machine** | hostname (?), model, type, service_tag, operacional_system, ram_memory, disk_memory, ip, mac_address, administrator, cod_jdb, date_purchase (DateTime), quantity (Int), crypto_disk (Bool), crypto_usb (Bool), crypto_memory_card (Bool), sold_out (Bool), date_sold_out (DateTime?) | service_tag, ip, mac_address |
+| 3 | **Software** | software_name (?), key, quantity (Int), type_licence, quantity_purchase (Int), last_purchase_date (DateTime), on_use (Int), departament, observation (Text), expires_at (DateTime?) | - |
 
 ### 9 Entidades Dependentes
 
@@ -99,6 +99,47 @@ Collaborator -N:N-> Software (via CollaboratorSoftware)
 Collaborator -N:N-> Machine (via CollaboratorMachine)
 Machine      -1:N-> AntiVirus, Server, DataDestroyed
 ```
+
+## Mapeamento Frontend ↔ Model (Serializer Aliases)
+
+O frontend usa nomes diferentes dos campos do modelo. Serializers mapeiam via `source=`:
+
+### Collaborator
+
+| Campo frontend (snake_case) | Campo model | Serializer strategy |
+|-----------------------------|-------------|---------------------|
+| `name` | `full_name` | `CharField(source='full_name')` |
+| `department` | `office` | `CharField(source='office')` |
+| `has_internet_access` | `perm_acess_internet` | `BooleanField(source='perm_acess_internet')` |
+| `has_server_access` | — (relacao ServerAccess) | `SerializerMethodField()` |
+| `has_erp_access` | — (relacao ServerErpAccess) | `SerializerMethodField()` |
+| `has_cellphone` | — (relacao Cellphone) | `SerializerMethodField()` |
+| `email` | — (relacao Email) | `SerializerMethodField()` → primeiro email |
+
+### Machine
+
+| Campo frontend | Campo model | Serializer strategy |
+|----------------|-------------|---------------------|
+| `hostname` | `hostname` | Direto (campo novo no model) |
+| `operational_system` | `operacional_system` | `CharField(source='operacional_system')` |
+| `encrypted` | — (derivado) | `SerializerMethodField()` → `crypto_disk OR crypto_usb OR crypto_memory_card` |
+| `antivirus` | — (relacao AntiVirus) | `SerializerMethodField()` → exists com year=current |
+| `collaborator_id` | — (via CollaboratorMachine) | `SerializerMethodField()` |
+| `collaborator_name` | — (via CollaboratorMachine) | `SerializerMethodField()` |
+| `machine_type` | `type` | `CharField(source='type')` |
+
+> **CRITICO N+1**: MachineController.get_queryset() DEVE usar `prefetch_related('collaborator_machines__collaborator', 'antivirus_records')`.
+
+### Software
+
+| Campo frontend | Campo model | Serializer strategy |
+|----------------|-------------|---------------------|
+| `license_key` | `key` | `CharField(source='key')` |
+| `license_type` | `type_licence` | `CharField(source='type_licence')` |
+| `in_use` | `on_use` | `IntegerField(source='on_use')` |
+| `expires_at` | `expires_at` | Direto (campo NOVO — distinto de `last_purchase_date`) |
+
+> **Nota**: `expires_at` (data de expiracao da licenca) e `last_purchase_date` (data da ultima compra) sao campos semanticamente distintos. `expires_at` e null para licencas perpetual/OEM.
 
 ## Padroes de Serializers
 
@@ -287,11 +328,34 @@ class CollaboratorController(BaseController):
 
 | Metodo | Rota | View | Descricao |
 |--------|------|------|-----------|
-| POST | `/api/auth/login/` | TokenObtainPairView | Retorna {access, refresh} |
-| POST | `/api/auth/refresh/` | TokenRefreshView | Retorna {access} |
-| POST | `/api/auth/register/` | RegisterView | Cria usuario, retorna tokens |
-| GET | `/api/auth/me/` | UserView | Retorna dados do usuario |
-| POST | `/api/auth/logout/` | LogoutView | Blacklist do refresh token |
+| POST | `/api/auth/login/` | simplejwt `TokenObtainPairView` | Retorna {access, refresh} |
+| POST | `/api/auth/refresh/` | simplejwt `TokenRefreshView` | Retorna {access} |
+| POST | `/api/auth/register/` | Custom `RegisterView` (IsAdminUser) | Cria usuario (staff only) |
+| GET | `/api/auth/me/` | Custom `UserView` | Retorna dados do usuario |
+| POST | `/api/auth/logout/` | simplejwt `TokenBlacklistView` | Blacklist do refresh token (retorna 200) |
+
+## Dashboard Stats
+
+Endpoint agregado que alimenta o dashboard do frontend.
+
+**GET `/api/dashboard/stats/`** (IsAuthenticated)
+
+```python
+# Resposta esperada:
+{
+    "active_collaborators": 8,       # Collaborator(status=True, fired=False).count()
+    "total_collaborators": 10,       # Collaborator.objects.count()
+    "total_machines": 5,             # Machine.objects.count()
+    "total_software": 6,             # Software.objects.count()
+    "pending_reports": 16,           # Report(status='pending').count()
+    "total_reports": 19,             # Report.objects.count()
+    "machines_without_encryption": [  # Machine(crypto_disk=False, crypto_usb=False,
+        "PC-TI-001", "PC-ADM-003"   #   crypto_memory_card=False).values_list('hostname')
+    ]
+}
+```
+
+> **Nota**: `machines_without_encryption` retorna lista de `hostname` (alinhado com MSW mock do frontend).
 
 ## 19 Relatorios
 
@@ -494,9 +558,12 @@ from datetime import timedelta
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
+    'ROTATE_REFRESH_TOKENS': True,        # OBRIGATORIO: cada refresh gera novo token
+    'BLACKLIST_AFTER_ROTATION': True,      # OBRIGATORIO: invalida refresh antigo (default e False!)
 }
+# ATENCAO: BLACKLIST_AFTER_ROTATION default do simplejwt e False.
+# Sem essa config, refresh tokens antigos continuam validos apos rotation.
+# Requer 'rest_framework_simplejwt.token_blacklist' em INSTALLED_APPS.
 ```
 
 ## Testes Backend

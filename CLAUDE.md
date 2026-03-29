@@ -536,15 +536,18 @@ class BaseRepository:
 
 ## Autenticacao JWT
 
-| Endpoint | Metodo | Descricao |
-|----------|--------|-----------|
-| `/api/auth/login/` | POST | Gera access + refresh token |
-| `/api/auth/refresh/` | POST | Renova access token |
-| `/api/auth/register/` | POST | Cria novo usuario |
-| `/api/auth/me/` | GET | Dados do usuario logado |
-| `/api/auth/logout/` | POST | Invalida refresh token |
+| Endpoint | Metodo | Descricao | View |
+|----------|--------|-----------|------|
+| `/api/auth/login/` | POST | Gera access + refresh token | simplejwt `TokenObtainPairView` |
+| `/api/auth/refresh/` | POST | Renova access token | simplejwt `TokenRefreshView` |
+| `/api/auth/register/` | POST | Cria novo usuario (staff only) | Custom `RegisterView` (IsAdminUser) |
+| `/api/auth/me/` | GET | Dados do usuario logado | Custom `UserView` |
+| `/api/auth/logout/` | POST | Invalida refresh token (blacklist) | simplejwt `TokenBlacklistView` (retorna 200) |
 
 - Access token: 30 min / Refresh token: 1 dia
+- `ROTATE_REFRESH_TOKENS: True` — cada refresh gera novo refresh token
+- `BLACKLIST_AFTER_ROTATION: True` — refresh antigo e invalidado automaticamente
+- Requer `rest_framework_simplejwt.token_blacklist` em INSTALLED_APPS
 - Frontend armazena tokens em localStorage
 - Axios interceptor adiciona `Bearer <token>` automaticamente
 
@@ -552,10 +555,11 @@ class BaseRepository:
 
 - **Base URL:** `/api/`
 - **CRUD endpoints:** `/api/collaborators/`, `/api/machines/`, `/api/software/`, `/api/emails/`, `/api/cellphones/`, `/api/wifi/`, `/api/antivirus/`, `/api/servers/`, `/api/server-access/`, `/api/erp-access/`, `/api/data-destroyed/`, `/api/pen-drives/`
-- **Relatorios:** `/api/reports/{numero}/` (08, 09, 13, 15, 17, 19-26, 28, 29, 31, 33-35, 37)
+- **Dashboard:** `GET /api/dashboard/stats/` (contagens agregadas: colaboradores, maquinas, software, relatorios, maquinas sem criptografia)
+- **Relatorios:** `GET /api/reports/` (lista 19 relatorios), `POST /api/reports/{numero}/generate/` (marca como gerado), `GET /api/reports/{numero}/?format=pdf|xlsx` (exportacao — spec 003)
 - **Paginacao:** PageNumberPagination, 20 itens/pagina
 - **Filtros:** django-filter por campos, SearchFilter, OrderingFilter
-- **Exportacao:** `?format=pdf` ou `?format=xlsx`
+- **Exportacao:** `?format=pdf` ou `?format=xlsx` (implementacao completa na spec 003)
 
 ## Anti-patterns (NAO FACA)
 
@@ -565,7 +569,7 @@ class BaseRepository:
 - **Sem CORS** - Sempre configure `django-cors-headers`.
 - **Token em cookie** - Use localStorage + Axios interceptor.
 - **Controllers sem autenticacao** - Todos os controllers precisam de `IsAuthenticated` (exceto login/register).
-- **Queries N+1** - Use `select_related()` e `prefetch_related()`.
+- **Queries N+1** - Use `select_related()` e `prefetch_related()`. Exemplo critico: MachineController deve usar `prefetch_related('collaborator_machines__collaborator', 'antivirus_records')` para campos computed (collaborator_name, antivirus).
 - **Logica de negocio em controllers ou repositories** - Mantenha controllers finos, logica nos services.
 - **Controllers chamando ORM diretamente** - Use repositories para todo acesso a dados.
 - **Services retornando Response** - Services retornam dados puros (QuerySets, dicts), nunca objetos HTTP.
@@ -579,7 +583,7 @@ class BaseRepository:
 **3 Entidades Principais:**
 
 - **Collaborator** - Funcionario da JRC (nome, dominio, status, permissoes)
-- **Machine** - Computador/notebook (model, service_tag, IP, MAC, criptografia)
+- **Machine** - Computador/notebook (hostname, model, service_tag, IP, MAC, criptografia)
 - **Software** - Licenca de software (nome, chave, tipo licenca, uso)
 
 **11 Entidades Dependentes:**
