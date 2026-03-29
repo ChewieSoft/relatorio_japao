@@ -321,21 +321,24 @@ class DashboardService:
     def get_stats(self):
         """Retorna KPIs agregados para o dashboard do frontend.
 
+        Usa django.apps.get_model para acessar Report sem importar
+        o app reports diretamente, respeitando a regra do CLAUDE.md:
+        'Cada app Django importa apenas do proprio app ou de core'.
+
         Returns:
             dict: Contagens de colaboradores, maquinas, software,
                 relatorios e lista de maquinas sem criptografia.
         """
-        # Import local para evitar dependencia circular entre apps core e reports.
-        from reports.repositories import ReportRepository
-        report_repo = ReportRepository()
+        from django.apps import apps
+        Report = apps.get_model('reports', 'Report')
 
         return {
             'active_collaborators': self.collaborator_repo.get_active().count(),
             'total_collaborators': self.collaborator_repo.get_all().count(),
             'total_machines': self.machine_repo.get_all().count(),
             'total_software': self.software_repo.get_all().count(),
-            'pending_reports': report_repo.filter_by_status('pending').count(),
-            'total_reports': report_repo.get_all().count(),
+            'pending_reports': Report.objects.filter(status='pending').count(),
+            'total_reports': Report.objects.count(),
             'machines_without_encryption': list(
                 self.machine_repo.get_without_encryption()
             ),
