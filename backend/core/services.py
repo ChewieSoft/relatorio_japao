@@ -156,17 +156,55 @@ class CollaboratorService(BaseService):
             for rel in self.collaborator_software_repo.filter(collaborator=instance):
                 self.collaborator_software_repo.soft_delete(rel)
             for sw_id in software_ids:
-                self.collaborator_software_repo.create(
-                    collaborator=instance, software_id=sw_id
-                )
+                self._restore_or_create_software(instance, sw_id)
         if machine_ids is not None:
             for rel in self.collaborator_machine_repo.filter(collaborator=instance):
                 self.collaborator_machine_repo.soft_delete(rel)
             for mc_id in machine_ids:
-                self.collaborator_machine_repo.create(
-                    collaborator=instance, machine_id=mc_id
-                )
+                self._restore_or_create_machine(instance, mc_id)
         return instance
+
+    def _restore_or_create_software(self, collaborator, software_id):
+        """Restaura relacao soft-deleted ou cria nova relacao colaborador-software.
+
+        Evita acumulo de registros soft-deleted e previne IntegrityError
+        quando a mesma relacao e re-atribuida.
+
+        Args:
+            collaborator: Instancia do colaborador.
+            software_id: PK do software.
+        """
+        from .models import CollaboratorSoftware
+        existing = CollaboratorSoftware.all_objects.filter(
+            collaborator=collaborator, software_id=software_id, deleted_at__isnull=False
+        ).first()
+        if existing:
+            existing.restore()
+        else:
+            self.collaborator_software_repo.create(
+                collaborator=collaborator, software_id=software_id
+            )
+
+    def _restore_or_create_machine(self, collaborator, machine_id):
+        """Restaura relacao soft-deleted ou cria nova relacao colaborador-maquina.
+
+        Evita acumulo de registros soft-deleted e previne IntegrityError
+        quando a mesma relacao e re-atribuida.
+
+        Args:
+            collaborator: Instancia do colaborador.
+            machine_id: PK da maquina.
+        """
+        from .models import CollaboratorMachine
+        existing = CollaboratorMachine.all_objects.filter(
+            collaborator=collaborator, machine_id=machine_id, deleted_at__isnull=False
+        ).first()
+        if existing:
+            existing.restore()
+        else:
+            self.collaborator_machine_repo.create(
+                collaborator=collaborator, machine_id=machine_id
+            )
 
 
 class MachineService(BaseService):
@@ -287,6 +325,7 @@ class DashboardService:
             dict: Contagens de colaboradores, maquinas, software,
                 relatorios e lista de maquinas sem criptografia.
         """
+        # Import local para evitar dependencia circular entre apps core e reports.
         from reports.repositories import ReportRepository
         report_repo = ReportRepository()
 

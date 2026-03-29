@@ -555,10 +555,11 @@ class BaseRepository:
 
 - **Base URL:** `/api/`
 - **CRUD endpoints:** `/api/collaborators/`, `/api/machines/`, `/api/software/`, `/api/emails/`, `/api/cellphones/`, `/api/wifi/`, `/api/antivirus/`, `/api/servers/`, `/api/server-access/`, `/api/erp-access/`, `/api/data-destroyed/`, `/api/pen-drives/`
-- **Relatorios:** `/api/reports/{numero}/` (08, 09, 13, 15, 17, 19-26, 28, 29, 31, 33-35, 37)
+- **Dashboard:** `GET /api/dashboard/stats/` (contagens agregadas: colaboradores, maquinas, software, relatorios, maquinas sem criptografia)
+- **Relatorios:** `GET /api/reports/` (lista 19 relatorios), `POST /api/reports/{numero}/generate/` (marca como gerado), `GET /api/reports/{numero}/?format=pdf|xlsx` (exportacao — spec 003)
 - **Paginacao:** PageNumberPagination, 20 itens/pagina
 - **Filtros:** django-filter por campos, SearchFilter, OrderingFilter
-- **Exportacao:** `?format=pdf` ou `?format=xlsx`
+- **Exportacao:** `?format=pdf` ou `?format=xlsx` (implementacao completa na spec 003)
 
 ## Anti-patterns (NAO FACA)
 

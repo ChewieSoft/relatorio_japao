@@ -88,9 +88,12 @@ class CollaboratorListSerializer(serializers.ModelSerializer):
         return obj.cellphones.all().exists()
 
     def get_email(self, obj):
-        """Retorna o primeiro e-mail do colaborador ou None."""
-        first_email = obj.emails.first()
-        return first_email.email if first_email else None
+        """Retorna o primeiro e-mail do colaborador ou None.
+
+        Usa relacao prefetched para evitar N+1 queries.
+        """
+        emails = obj.emails.all()
+        return emails[0].email if emails else None
 
 
 class MachineListSerializer(serializers.ModelSerializer):
