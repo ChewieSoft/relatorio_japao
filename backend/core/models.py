@@ -203,7 +203,7 @@ class Email(BaseModel):
     """
 
     collaborator = models.ForeignKey(
-        Collaborator, on_delete=models.CASCADE, related_name='emails'
+        Collaborator, on_delete=models.PROTECT, related_name='emails'
     )
     email = models.CharField(max_length=255)
     remark = models.CharField(max_length=255, blank=True)
@@ -230,7 +230,7 @@ class Cellphone(BaseModel):
     """
 
     collaborator = models.ForeignKey(
-        Collaborator, on_delete=models.CASCADE, related_name='cellphones'
+        Collaborator, on_delete=models.PROTECT, related_name='cellphones'
     )
     model = models.CharField(max_length=255)
     operacional_system = models.CharField(max_length=100)
@@ -259,7 +259,7 @@ class Wifi(BaseModel):
     """
 
     collaborator = models.ForeignKey(
-        Collaborator, on_delete=models.CASCADE, related_name='wifi_records'
+        Collaborator, on_delete=models.PROTECT, related_name='wifi_records'
     )
     wifi_name = models.CharField(max_length=100)
     protection = models.CharField(max_length=100)
@@ -295,7 +295,7 @@ class AntiVirus(BaseModel):
     """
 
     machine = models.ForeignKey(
-        Machine, on_delete=models.CASCADE, related_name='antivirus_records'
+        Machine, on_delete=models.PROTECT, related_name='antivirus_records'
     )
     january_updated = models.BooleanField(default=False)
     february_updated = models.BooleanField(default=False)
@@ -340,7 +340,7 @@ class Server(BaseModel):
     """
 
     machine = models.ForeignKey(
-        Machine, on_delete=models.CASCADE, related_name='servers'
+        Machine, on_delete=models.PROTECT, related_name='servers'
     )
     have_backup = models.BooleanField(default=False)
     backup_date = models.DateTimeField(null=True, blank=True)
@@ -360,7 +360,7 @@ class ServerAccess(BaseModel):
     """
 
     collaborator = models.ForeignKey(
-        Collaborator, on_delete=models.CASCADE, related_name='server_accesses'
+        Collaborator, on_delete=models.PROTECT, related_name='server_accesses'
     )
     level01 = models.BooleanField(default=False)
     level02 = models.BooleanField(default=False)
@@ -388,7 +388,7 @@ class ServerErpAccess(BaseModel):
     """
 
     collaborator = models.ForeignKey(
-        Collaborator, on_delete=models.CASCADE, related_name='erp_accesses'
+        Collaborator, on_delete=models.PROTECT, related_name='erp_accesses'
     )
     purchase = models.BooleanField(default=False)
     sale = models.BooleanField(default=False)
@@ -412,7 +412,7 @@ class DataDestroyed(BaseModel):
     """
 
     machine = models.ForeignKey(
-        Machine, on_delete=models.CASCADE, related_name='data_destroyed_records'
+        Machine, on_delete=models.PROTECT, related_name='data_destroyed_records'
     )
     when_data_is_destroyed = models.DateTimeField()
     i_can_destroy_data = models.BooleanField(default=False)
@@ -434,7 +434,7 @@ class PenDrive(BaseModel):
     """
 
     collaborator = models.ForeignKey(
-        Collaborator, on_delete=models.CASCADE, related_name='pen_drives'
+        Collaborator, on_delete=models.PROTECT, related_name='pen_drives'
     )
     checked_date = models.DateTimeField()
     have_virus = models.BooleanField(default=False)
@@ -459,14 +459,20 @@ class CollaboratorSoftware(BaseModel):
     """
 
     collaborator = models.ForeignKey(
-        Collaborator, on_delete=models.CASCADE, related_name='collaborator_software'
+        Collaborator, on_delete=models.PROTECT, related_name='collaborator_software'
     )
     software = models.ForeignKey(
-        Software, on_delete=models.CASCADE, related_name='collaborator_software'
+        Software, on_delete=models.PROTECT, related_name='collaborator_software'
     )
 
     class Meta:
-        unique_together = ('collaborator', 'software')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['collaborator', 'software'],
+                condition=models.Q(deleted_at__isnull=True),
+                name='unique_active_collaborator_software',
+            ),
+        ]
 
     def __str__(self):
         return f"{self.collaborator} - {self.software}"
@@ -483,14 +489,20 @@ class CollaboratorMachine(BaseModel):
     """
 
     collaborator = models.ForeignKey(
-        Collaborator, on_delete=models.CASCADE, related_name='collaborator_machines'
+        Collaborator, on_delete=models.PROTECT, related_name='collaborator_machines'
     )
     machine = models.ForeignKey(
-        Machine, on_delete=models.CASCADE, related_name='collaborator_machines'
+        Machine, on_delete=models.PROTECT, related_name='collaborator_machines'
     )
 
     class Meta:
-        unique_together = ('collaborator', 'machine')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['collaborator', 'machine'],
+                condition=models.Q(deleted_at__isnull=True),
+                name='unique_active_collaborator_machine',
+            ),
+        ]
 
     def __str__(self):
         return f"{self.collaborator} - {self.machine}"

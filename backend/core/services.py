@@ -260,3 +260,44 @@ class PenDriveService(BaseService):
     def __init__(self):
         """Inicializa service com PenDriveRepository."""
         self.repository = PenDriveRepository()
+
+
+# =============================================================================
+# Dashboard
+# =============================================================================
+
+
+class DashboardService:
+    """Servico de logica de negocio para estatisticas do dashboard.
+
+    Encapsula queries agregadas que alimentam o endpoint
+    GET /api/dashboard/stats/. Acessa dados via repositories.
+    """
+
+    def __init__(self):
+        """Inicializa service com repositories necessarios."""
+        self.collaborator_repo = CollaboratorRepository()
+        self.machine_repo = MachineRepository()
+        self.software_repo = SoftwareRepository()
+
+    def get_stats(self):
+        """Retorna KPIs agregados para o dashboard do frontend.
+
+        Returns:
+            dict: Contagens de colaboradores, maquinas, software,
+                relatorios e lista de maquinas sem criptografia.
+        """
+        from reports.repositories import ReportRepository
+        report_repo = ReportRepository()
+
+        return {
+            'active_collaborators': self.collaborator_repo.get_active().count(),
+            'total_collaborators': self.collaborator_repo.get_all().count(),
+            'total_machines': self.machine_repo.get_all().count(),
+            'total_software': self.software_repo.get_all().count(),
+            'pending_reports': report_repo.filter_by_status('pending').count(),
+            'total_reports': report_repo.get_all().count(),
+            'machines_without_encryption': list(
+                self.machine_repo.get_without_encryption()
+            ),
+        }

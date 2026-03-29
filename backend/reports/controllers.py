@@ -62,9 +62,17 @@ class ReportGenerateView(APIView):
             number: Numero do relatorio (ex: '08').
 
         Returns:
-            Response: Status e last_generated atualizados.
+            Response: Status e last_generated atualizados (200) ou 404 se nao encontrado.
         """
-        report = self.service.generate(number)
+        from .models import Report
+
+        try:
+            report = self.service.generate(number)
+        except Report.DoesNotExist:
+            return Response(
+                {'detail': f'Relatorio {number} nao encontrado.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         return Response({
             'status': report.status,
             'last_generated': report.last_generated,

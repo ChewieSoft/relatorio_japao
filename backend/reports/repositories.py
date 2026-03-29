@@ -26,6 +26,17 @@ class ReportRepository:
         """
         return self.model.objects.all()
 
+    def filter_by_status(self, status):
+        """Filtra relatorios por status.
+
+        Args:
+            status: Status desejado ('pending', 'generated', 'sent').
+
+        Returns:
+            QuerySet[Report]: Relatorios com o status informado.
+        """
+        return self.model.objects.filter(status=status)
+
     def get_by_number(self, number):
         """Retorna um relatorio pelo numero identificador.
 

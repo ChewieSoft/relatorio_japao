@@ -172,6 +172,18 @@ class MachineRepository(BaseRepository):
             'antivirus_records',
         )
 
+    def get_without_encryption(self):
+        """Retorna hostnames de maquinas sem nenhuma criptografia ativa.
+
+        Returns:
+            QuerySet: Lista de hostnames (flat) onde todos os crypto_* sao False.
+        """
+        return self.model.objects.filter(
+            crypto_disk=False,
+            crypto_usb=False,
+            crypto_memory_card=False,
+        ).values_list('hostname', flat=True)
+
 
 class SoftwareRepository(BaseRepository):
     """Repositorio de acesso a dados de software.

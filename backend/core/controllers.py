@@ -65,6 +65,7 @@ from .services import (
     AntiVirusService,
     CellphoneService,
     CollaboratorService,
+    DashboardService,
     DataDestroyedService,
     EmailService,
     MachineService,
@@ -304,11 +305,15 @@ class DashboardStatsView(APIView):
 
     Endpoint: GET /api/dashboard/stats/
     Permissoes: IsAuthenticated.
-    Retorna contagens de colaboradores, maquinas, software,
-    relatorios e lista de maquinas sem criptografia.
+    Delega logica de negocio para DashboardService.
     """
 
     permission_classes = [IsAuthenticated]
+
+    def __init__(self, **kwargs):
+        """Inicializa controller com DashboardService."""
+        super().__init__(**kwargs)
+        self.service = DashboardService()
 
     def get(self, request):
         """Retorna KPIs agregados para o dashboard do frontend.
@@ -316,30 +321,4 @@ class DashboardStatsView(APIView):
         Returns:
             Response: DashboardStats com contagens e lista de hostnames.
         """
-        from reports.models import Report
-
-        active_collaborators = Collaborator.objects.filter(
-            status=True, fired=False
-        ).count()
-        total_collaborators = Collaborator.objects.count()
-        total_machines = Machine.objects.count()
-        total_software = Software.objects.count()
-        pending_reports = Report.objects.filter(status='pending').count()
-        total_reports = Report.objects.count()
-        machines_without_encryption = list(
-            Machine.objects.filter(
-                crypto_disk=False,
-                crypto_usb=False,
-                crypto_memory_card=False,
-            ).values_list('hostname', flat=True)
-        )
-
-        return Response({
-            'active_collaborators': active_collaborators,
-            'total_collaborators': total_collaborators,
-            'total_machines': total_machines,
-            'total_software': total_software,
-            'pending_reports': pending_reports,
-            'total_reports': total_reports,
-            'machines_without_encryption': machines_without_encryption,
-        })
+        return Response(self.service.get_stats())
