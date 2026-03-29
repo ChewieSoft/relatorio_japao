@@ -201,7 +201,7 @@ backend/
 **Customizações específicas**:
 - CollaboratorRepository: get_active(), get_with_emails(pk), get_domain_users()
 - CollaboratorService: nested creation com @transaction.atomic (Collaborator + Emails)
-- MachineRepository: `get_all()` com `prefetch_related('collaboratormachine_set__collaborator', 'antivirus_records')` para evitar N+1
+- MachineRepository: `get_all()` com `prefetch_related('collaborator_machines__collaborator', 'antivirus_records')` para evitar N+1
 - ReportRepository + ReportService em `backend/reports/`
 
 **Verificação**: Testes unitários de repository (create, soft_delete, filter).
@@ -225,7 +225,7 @@ backend/
 **Serializers — Mapeamento frontend↔model**:
 - CollaboratorListSerializer: name→source='full_name', department→source='office', has_server_access (SerializerMethodField), has_erp_access, has_internet_access→source='perm_acess_internet', has_cellphone, email (primeiro email)
 - MachineListSerializer: hostname (campo direto), encrypted (SerializerMethodField: crypto_disk OR crypto_usb OR crypto_memory_card), antivirus (SerializerMethodField: exists AntiVirus year=current), collaborator_id/collaborator_name (SerializerMethodField via CollaboratorMachine prefetched)
-- **ATENÇÃO N+1**: MachineController.get_queryset() DEVE usar `prefetch_related('collaboratormachine_set__collaborator', 'antivirus_records')` para evitar 40+ queries extras por página
+- **ATENÇÃO N+1**: MachineController.get_queryset() DEVE usar `prefetch_related('collaborator_machines__collaborator', 'antivirus_records')` para evitar 40+ queries extras por página
 - SoftwareListSerializer: license_key→source='key', license_type→source='type_licence', in_use→source='on_use', expires_at (campo novo)
 
 **DashboardStatsView** (GET `/api/dashboard/stats/`):

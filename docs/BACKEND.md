@@ -128,7 +128,7 @@ O frontend usa nomes diferentes dos campos do modelo. Serializers mapeiam via `s
 | `collaborator_name` | — (via CollaboratorMachine) | `SerializerMethodField()` |
 | `machine_type` | `type` | `CharField(source='type')` |
 
-> **CRITICO N+1**: MachineController.get_queryset() DEVE usar `prefetch_related('collaboratormachine_set__collaborator', 'antivirus_records')`.
+> **CRITICO N+1**: MachineController.get_queryset() DEVE usar `prefetch_related('collaborator_machines__collaborator', 'antivirus_records')`.
 
 ### Software
 

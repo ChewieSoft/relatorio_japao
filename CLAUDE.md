@@ -569,7 +569,7 @@ class BaseRepository:
 - **Sem CORS** - Sempre configure `django-cors-headers`.
 - **Token em cookie** - Use localStorage + Axios interceptor.
 - **Controllers sem autenticacao** - Todos os controllers precisam de `IsAuthenticated` (exceto login/register).
-- **Queries N+1** - Use `select_related()` e `prefetch_related()`. Exemplo critico: MachineController deve usar `prefetch_related('collaboratormachine_set__collaborator', 'antivirus_records')` para campos computed (collaborator_name, antivirus).
+- **Queries N+1** - Use `select_related()` e `prefetch_related()`. Exemplo critico: MachineController deve usar `prefetch_related('collaborator_machines__collaborator', 'antivirus_records')` para campos computed (collaborator_name, antivirus).
 - **Logica de negocio em controllers ou repositories** - Mantenha controllers finos, logica nos services.
 - **Controllers chamando ORM diretamente** - Use repositories para todo acesso a dados.
 - **Services retornando Response** - Services retornam dados puros (QuerySets, dicts), nunca objetos HTTP.

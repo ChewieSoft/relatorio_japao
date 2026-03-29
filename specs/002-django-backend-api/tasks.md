@@ -98,7 +98,7 @@
 ### Implementation for User Story 3
 
 - [x] T030 [P] [US3] Create CollaboratorRepository in `backend/core/repositories.py` extending BaseRepository: get_active(), get_with_emails(pk), get_domain_users(), model=Collaborator
-- [x] T031 [P] [US3] Create MachineRepository in `backend/core/repositories.py` extending BaseRepository: override get_all() with prefetch_related('collaboratormachine_set__collaborator', 'antivirus_records'), model=Machine
+- [x] T031 [P] [US3] Create MachineRepository in `backend/core/repositories.py` extending BaseRepository: override get_all() with prefetch_related('collaborator_machines__collaborator', 'antivirus_records'), model=Machine
 - [x] T032 [P] [US3] Create SoftwareRepository in `backend/core/repositories.py` extending BaseRepository: model=Software
 - [x] T033 [P] [US3] Create CollaboratorService in `backend/core/services.py` extending BaseService: repository=CollaboratorRepository
 - [x] T034 [P] [US3] Create MachineService in `backend/core/services.py` extending BaseService: repository=MachineRepository
@@ -107,7 +107,7 @@
 - [x] T037 [US3] Create MachineListSerializer in `backend/core/serializers.py` with field mapping: hostname(direct), operational_system(source='operacional_system'), encrypted(SerializerMethodField: crypto_disk OR crypto_usb OR crypto_memory_card), antivirus(SerializerMethodField: exists AntiVirus year=current), collaborator_id/collaborator_name(SerializerMethodField via CollaboratorMachine), machine_type(source='type')
 - [x] T038 [US3] Create SoftwareListSerializer in `backend/core/serializers.py` with field mapping: license_key(source='key'), license_type(source='type_licence'), in_use(source='on_use'), expires_at(direct)
 - [x] T039 [US3] Create CollaboratorController in `backend/core/controllers.py` extending BaseController: service=CollaboratorService, filterset_fields=[status, fired, office, admin_privilege], search_fields=[full_name, domain_user], ordering_fields=[full_name, date_hired], get_serializer_class returns CollaboratorListSerializer for list action
-- [x] T040 [US3] Create MachineController in `backend/core/controllers.py` extending BaseController: service=MachineService, get_queryset with prefetch_related('collaboratormachine_set__collaborator', 'antivirus_records'), filterset_fields=[type, sold_out, crypto_disk], search_fields=[model, service_tag, ip]
+- [x] T040 [US3] Create MachineController in `backend/core/controllers.py` extending BaseController: service=MachineService, get_queryset with prefetch_related('collaborator_machines__collaborator', 'antivirus_records'), filterset_fields=[type, sold_out, crypto_disk], search_fields=[model, service_tag, ip]
 - [x] T041 [US3] Create SoftwareController in `backend/core/controllers.py` extending BaseController: service=SoftwareService, filterset_fields=[type_licence, departament], search_fields=[software_name, key]
 - [x] T042 [US3] Create FilterSets for Collaborator, Machine, Software in `backend/core/filters.py`
 - [x] T043 [US3] Create `backend/core/urls.py` with DefaultRouter registering CollaboratorController('collaborators'), MachineController('machines'), SoftwareController('software')
