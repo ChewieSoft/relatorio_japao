@@ -11,9 +11,14 @@ from decouple import Csv, config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-production')
+_debug = config('DEBUG', default=True, cast=bool)
+DEBUG = _debug
 
-DEBUG = config('DEBUG', default=True, cast=bool)
+# SECRET_KEY obrigatoria em producao. Default inseguro apenas quando DEBUG=True.
+if _debug:
+    SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-only-key')
+else:
+    SECRET_KEY = config('SECRET_KEY')  # Crash se ausente em producao
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,backend', cast=Csv())
 
@@ -71,8 +76,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': config('DB_NAME', default='relatoriojapao'),
-        'USER': config('DB_USER', default='admin'),
-        'PASSWORD': config('DB_PASSWORD', default='admin'),
+        'USER': config('DB_USER', default='admin' if _debug else None),
+        'PASSWORD': config('DB_PASSWORD', default='admin' if _debug else None),
         'HOST': config('DB_HOST', default='localhost'),
         'PORT': config('DB_PORT', default='5432'),
     }

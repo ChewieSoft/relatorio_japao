@@ -153,15 +153,15 @@ class CollaboratorService(BaseService):
         instance = self.repository.get_by_id(pk)
         self.repository.update(instance, **data)
         if software_ids is not None:
-            from .models import CollaboratorSoftware
-            CollaboratorSoftware.objects.filter(collaborator=instance).delete()
+            for rel in self.collaborator_software_repo.filter(collaborator=instance):
+                self.collaborator_software_repo.soft_delete(rel)
             for sw_id in software_ids:
                 self.collaborator_software_repo.create(
                     collaborator=instance, software_id=sw_id
                 )
         if machine_ids is not None:
-            from .models import CollaboratorMachine
-            CollaboratorMachine.objects.filter(collaborator=instance).delete()
+            for rel in self.collaborator_machine_repo.filter(collaborator=instance):
+                self.collaborator_machine_repo.soft_delete(rel)
             for mc_id in machine_ids:
                 self.collaborator_machine_repo.create(
                     collaborator=instance, machine_id=mc_id

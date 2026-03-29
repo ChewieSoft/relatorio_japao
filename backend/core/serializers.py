@@ -4,8 +4,7 @@ BaseSerializer fornece configuracao padrao. Serializers de listagem
 mapeiam campos do modelo para o contrato do frontend (snake_case).
 Serializers de detalhe incluem relacoes aninhadas.
 """
-from datetime import datetime
-
+from django.utils import timezone
 from rest_framework import serializers
 
 from .models import (
@@ -68,16 +67,25 @@ class CollaboratorListSerializer(serializers.ModelSerializer):
         ]
 
     def get_has_server_access(self, obj):
-        """Verifica se colaborador tem acesso ao servidor de arquivos."""
-        return ServerAccess.objects.filter(collaborator=obj).exists()
+        """Verifica se colaborador tem acesso ao servidor de arquivos.
+
+        Usa relacao prefetched para evitar N+1 queries.
+        """
+        return obj.server_accesses.all().exists()
 
     def get_has_erp_access(self, obj):
-        """Verifica se colaborador tem acesso ao ERP."""
-        return ServerErpAccess.objects.filter(collaborator=obj).exists()
+        """Verifica se colaborador tem acesso ao ERP.
+
+        Usa relacao prefetched para evitar N+1 queries.
+        """
+        return obj.erp_accesses.all().exists()
 
     def get_has_cellphone(self, obj):
-        """Verifica se colaborador tem celular corporativo."""
-        return Cellphone.objects.filter(collaborator=obj).exists()
+        """Verifica se colaborador tem celular corporativo.
+
+        Usa relacao prefetched para evitar N+1 queries.
+        """
+        return obj.cellphones.all().exists()
 
     def get_email(self, obj):
         """Retorna o primeiro e-mail do colaborador ou None."""
@@ -113,19 +121,28 @@ class MachineListSerializer(serializers.ModelSerializer):
         return obj.crypto_disk or obj.crypto_usb or obj.crypto_memory_card
 
     def get_antivirus(self, obj):
-        """Verifica se a maquina tem registro de antivirus no ano corrente."""
-        current_year = datetime.now().year
-        return obj.antivirus_records.filter(year=current_year).exists()
+        """Verifica se a maquina tem registro de antivirus no ano corrente.
+
+        Usa relacao prefetched e filtra em Python para evitar N+1.
+        """
+        current_year = timezone.now().year
+        return any(r.year == current_year for r in obj.antivirus_records.all())
 
     def get_collaborator_id(self, obj):
-        """Retorna ID do primeiro colaborador associado ou None."""
-        first_rel = obj.collaborator_machines.first()
-        return first_rel.collaborator_id if first_rel else None
+        """Retorna ID do primeiro colaborador associado ou None.
+
+        Usa relacao prefetched para evitar N+1 queries.
+        """
+        rels = obj.collaborator_machines.all()
+        return rels[0].collaborator_id if rels else None
 
     def get_collaborator_name(self, obj):
-        """Retorna nome do primeiro colaborador associado ou None."""
-        first_rel = obj.collaborator_machines.select_related('collaborator').first()
-        return first_rel.collaborator.full_name if first_rel else None
+        """Retorna nome do primeiro colaborador associado ou None.
+
+        Usa relacao prefetched para evitar N+1 queries.
+        """
+        rels = obj.collaborator_machines.all()
+        return rels[0].collaborator.full_name if rels else None
 
 
 class SoftwareListSerializer(serializers.ModelSerializer):
