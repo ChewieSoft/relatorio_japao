@@ -16,5 +16,15 @@ python manage.py migrate --noinput
 echo "Carregando dados iniciais (se tabelas estiverem vazias)..."
 python manage.py loaddata fixtures/sample_data.json --ignorenonexistent 2>/dev/null || echo "Fixtures ja carregadas ou nao encontradas."
 
+echo "Criando superusuario de desenvolvimento (se nao existir)..."
+python manage.py shell -c "
+from django.contrib.auth.models import User
+if not User.objects.filter(username='admin').exists():
+    User.objects.create_superuser('admin', 'admin@jrc.com', 'admin123')
+    print('Superusuario criado: admin / admin123')
+else:
+    print('Superusuario admin ja existe.')
+"
+
 echo "Iniciando servidor..."
 exec python manage.py runserver 0.0.0.0:8000

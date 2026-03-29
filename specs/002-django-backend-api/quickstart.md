@@ -17,20 +17,17 @@ cp .env.example .env
 # 2. Subir todos os serviços
 docker-compose up --build
 
-# 3. Criar superusuário (em outro terminal)
-docker-compose exec backend python manage.py createsuperuser
-
-# 4. Carregar dados de teste
-docker-compose exec backend python manage.py loaddata fixtures/sample_data.json
+# Superusuário e fixtures são criados automaticamente pelo entrypoint.
+# Credenciais padrão: admin / admin123
 ```
 
 ## Acessos
 
 | Serviço | URL | Notas |
 |---------|-----|-------|
-| Frontend React | http://localhost:8080 | SPA com React Query |
+| Frontend React | http://localhost:8080 | Login: admin / admin123 |
 | Backend Django API | http://localhost:8000/api/ | DRF Browsable API |
-| Django Admin | http://localhost:8000/admin/ | Superusuário criado acima |
+| Django Admin | http://localhost:8000/admin/ | admin / admin123 |
 | PostgreSQL | localhost:5432 | DB: relatoriojapao, User: admin |
 
 ## Testar autenticação
