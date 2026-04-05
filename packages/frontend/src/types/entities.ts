@@ -77,3 +77,240 @@ export interface DashboardStats {
   totalReports: number
   machinesWithoutEncryption: string[]
 }
+
+// ---------------------------------------------------------------------------
+// FormData types — campos camelCase usados pelo react-hook-form
+// ---------------------------------------------------------------------------
+
+import { z } from 'zod'
+
+/** Dados do formulário de colaborador (create/edit). */
+export interface CollaboratorFormData {
+  fullName: string
+  domainUser: string
+  office: string
+  status: boolean
+  fired: boolean
+  dateHired: string
+  dateFired: string
+  permAcessInternet: boolean
+  acessWifi: boolean
+  adminPrivilege: boolean
+}
+
+/** Dados do formulário de máquina (create/edit). */
+export interface MachineFormData {
+  hostname: string
+  model: string
+  type: 'desktop' | 'notebook'
+  serviceTag: string
+  operacionalSystem: string
+  ramMemory: string
+  diskMemory: string
+  ip: string
+  macAddress: string
+  administrator: string
+  codJdb: string
+  datePurchase: string
+  quantity: number
+  cryptoDisk: boolean
+  cryptoUsb: boolean
+  cryptoMemoryCard: boolean
+  soldOut: boolean
+  dateSoldOut: string
+}
+
+/** Dados do formulário de software (create/edit). */
+export interface SoftwareFormData {
+  softwareName: string
+  key: string
+  typeLicence: string
+  quantity: number
+  quantityPurchase: number
+  onUse: number
+  departament: string
+  lastPurchaseDate: string
+  expiresAt: string
+  observation: string
+}
+
+// ---------------------------------------------------------------------------
+// Zod schemas — validação client-side com campos condicionais
+// ---------------------------------------------------------------------------
+
+/** Schema de validação para formulário de colaborador. */
+export const collaboratorSchema = z.object({
+  fullName: z.string().min(1, 'Nome completo é obrigatório').max(255),
+  domainUser: z.string().min(1, 'Usuário de domínio é obrigatório').max(255),
+  office: z.string().min(1, 'Departamento é obrigatório').max(100),
+  status: z.boolean(),
+  fired: z.boolean(),
+  dateHired: z.string().min(1, 'Data de contratação é obrigatória'),
+  dateFired: z.string(),
+  permAcessInternet: z.boolean(),
+  acessWifi: z.boolean(),
+  adminPrivilege: z.boolean(),
+}).refine(
+  (data) => !data.fired || data.dateFired.length > 0,
+  { message: 'Data de demissão é obrigatória quando demitido', path: ['dateFired'] }
+)
+
+/** Schema de validação para formulário de máquina. */
+export const machineSchema = z.object({
+  hostname: z.string().max(255),
+  model: z.string().min(1, 'Modelo é obrigatório').max(255),
+  type: z.enum(['desktop', 'notebook'], { required_error: 'Tipo é obrigatório' }),
+  serviceTag: z.string().min(1, 'Service Tag é obrigatório').max(100),
+  operacionalSystem: z.string().min(1, 'Sistema operacional é obrigatório').max(100),
+  ramMemory: z.string().min(1, 'Memória RAM é obrigatória').max(50),
+  diskMemory: z.string().min(1, 'Disco é obrigatório').max(50),
+  ip: z.string().min(1, 'IP é obrigatório').max(45)
+    .regex(/^(\d{1,3}\.){3}\d{1,3}$/, 'Formato de IP inválido'),
+  macAddress: z.string().min(1, 'Endereço MAC é obrigatório').max(17)
+    .regex(/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/, 'Formato de MAC inválido'),
+  administrator: z.string().min(1, 'Administrador é obrigatório').max(255),
+  codJdb: z.string().min(1, 'Código JDB é obrigatório').max(50),
+  datePurchase: z.string().min(1, 'Data de compra é obrigatória'),
+  quantity: z.number().min(1, 'Quantidade mínima é 1'),
+  cryptoDisk: z.boolean(),
+  cryptoUsb: z.boolean(),
+  cryptoMemoryCard: z.boolean(),
+  soldOut: z.boolean(),
+  dateSoldOut: z.string(),
+}).refine(
+  (data) => !data.soldOut || data.dateSoldOut.length > 0,
+  { message: 'Data de baixa é obrigatória quando em baixa patrimonial', path: ['dateSoldOut'] }
+)
+
+/** Schema de validação para formulário de software. */
+export const softwareSchema = z.object({
+  softwareName: z.string().max(255),
+  key: z.string().min(1, 'Chave de licença é obrigatória').max(255),
+  typeLicence: z.string().min(1, 'Tipo de licença é obrigatório').max(50),
+  quantity: z.number().min(0, 'Quantidade não pode ser negativa'),
+  quantityPurchase: z.number().min(0, 'Quantidade comprada não pode ser negativa'),
+  onUse: z.number().min(0, 'Quantidade em uso não pode ser negativa'),
+  departament: z.string().min(1, 'Departamento é obrigatório').max(100),
+  lastPurchaseDate: z.string().min(1, 'Data da última compra é obrigatória'),
+  expiresAt: z.string(),
+  observation: z.string(),
+}).refine(
+  (data) => data.typeLicence !== 'subscription' || data.expiresAt.length > 0,
+  { message: 'Data de expiração é obrigatória para assinatura', path: ['expiresAt'] }
+)
+
+// ---------------------------------------------------------------------------
+// Mapping helpers — camelCase (form) ↔ snake_case (API)
+// ---------------------------------------------------------------------------
+
+/** Converte dados do formulário de colaborador para payload snake_case da API. */
+export function toCollaboratorPayload(data: CollaboratorFormData): Record<string, unknown> {
+  return {
+    full_name: data.fullName,
+    domain_user: data.domainUser,
+    office: data.office,
+    status: data.status,
+    fired: data.fired,
+    date_hired: data.dateHired ? `${data.dateHired}T00:00:00Z` : null,
+    date_fired: data.fired && data.dateFired ? `${data.dateFired}T00:00:00Z` : null,
+    perm_acess_internet: data.permAcessInternet,
+    acess_wifi: data.acessWifi,
+    admin_privilege: data.adminPrivilege,
+  }
+}
+
+/** Converte dados do formulário de máquina para payload snake_case da API. */
+export function toMachinePayload(data: MachineFormData): Record<string, unknown> {
+  return {
+    hostname: data.hostname,
+    model: data.model,
+    type: data.type,
+    service_tag: data.serviceTag,
+    operacional_system: data.operacionalSystem,
+    ram_memory: data.ramMemory,
+    disk_memory: data.diskMemory,
+    ip: data.ip,
+    mac_address: data.macAddress,
+    administrator: data.administrator,
+    cod_jdb: data.codJdb,
+    date_purchase: data.datePurchase ? `${data.datePurchase}T00:00:00Z` : null,
+    quantity: data.quantity,
+    crypto_disk: data.cryptoDisk,
+    crypto_usb: data.cryptoUsb,
+    crypto_memory_card: data.cryptoMemoryCard,
+    sold_out: data.soldOut,
+    date_sold_out: data.soldOut && data.dateSoldOut ? `${data.dateSoldOut}T00:00:00Z` : null,
+  }
+}
+
+/** Converte dados do formulário de software para payload snake_case da API. */
+export function toSoftwarePayload(data: SoftwareFormData): Record<string, unknown> {
+  return {
+    software_name: data.softwareName || null,
+    key: data.key,
+    type_licence: data.typeLicence,
+    quantity: data.quantity,
+    quantity_purchase: data.quantityPurchase,
+    on_use: data.onUse,
+    departament: data.departament,
+    last_purchase_date: data.lastPurchaseDate ? `${data.lastPurchaseDate}T00:00:00Z` : null,
+    expires_at: data.typeLicence === 'subscription' && data.expiresAt ? `${data.expiresAt}T00:00:00Z` : null,
+    observation: data.observation,
+  }
+}
+
+/** Converte resposta detail da API (snake_case) para CollaboratorFormData (camelCase). */
+export function toCollaboratorFormData(raw: Record<string, unknown>): CollaboratorFormData {
+  return {
+    fullName: (raw.full_name as string) || '',
+    domainUser: (raw.domain_user as string) || '',
+    office: (raw.office as string) || '',
+    status: raw.status as boolean ?? true,
+    fired: raw.fired as boolean ?? false,
+    dateHired: ((raw.date_hired as string) || '').slice(0, 10),
+    dateFired: ((raw.date_fired as string) || '').slice(0, 10),
+    permAcessInternet: raw.perm_acess_internet as boolean ?? false,
+    acessWifi: raw.acess_wifi as boolean ?? false,
+    adminPrivilege: raw.admin_privilege as boolean ?? false,
+  }
+}
+
+/** Converte resposta detail da API (snake_case) para MachineFormData (camelCase). */
+export function toMachineFormData(raw: Record<string, unknown>): MachineFormData {
+  return {
+    hostname: (raw.hostname as string) || '',
+    model: (raw.model as string) || '',
+    type: (raw.type as 'desktop' | 'notebook') || 'desktop',
+    serviceTag: (raw.service_tag as string) || '',
+    operacionalSystem: (raw.operacional_system as string) || '',
+    ramMemory: (raw.ram_memory as string) || '',
+    diskMemory: (raw.disk_memory as string) || '',
+    ip: (raw.ip as string) || '',
+    macAddress: (raw.mac_address as string) || '',
+    administrator: (raw.administrator as string) || '',
+    codJdb: (raw.cod_jdb as string) || '',
+    datePurchase: ((raw.date_purchase as string) || '').slice(0, 10),
+    quantity: (raw.quantity as number) ?? 1,
+    cryptoDisk: raw.crypto_disk as boolean ?? false,
+    cryptoUsb: raw.crypto_usb as boolean ?? false,
+    cryptoMemoryCard: raw.crypto_memory_card as boolean ?? false,
+    soldOut: raw.sold_out as boolean ?? false,
+    dateSoldOut: ((raw.date_sold_out as string) || '').slice(0, 10),
+  }
+}
+
+/** Converte resposta detail da API (snake_case) para SoftwareFormData (camelCase). */
+export function toSoftwareFormData(raw: Record<string, unknown>): SoftwareFormData {
+  return {
+    softwareName: (raw.software_name as string) || '',
+    key: (raw.key as string) || '',
+    typeLicence: (raw.type_licence as string) || '',
+    quantity: (raw.quantity as number) ?? 0,
+    quantityPurchase: (raw.quantity_purchase as number) ?? 0,
+    onUse: (raw.on_use as number) ?? 0,
+    departament: (raw.departament as string) || '',
+    lastPurchaseDate: ((raw.last_purchase_date as string) || '').slice(0, 10),
+    expiresAt: ((raw.expires_at as string) || '').slice(0, 10),
+    observation: (raw.observation as string) || '',
+  }
+}

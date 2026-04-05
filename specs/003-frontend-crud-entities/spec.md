@@ -37,6 +37,8 @@ O frontend (spec 001) opera em modo somente leitura: exibe tabelas paginadas de 
 - Q: Padrão de UX para formulários de criação/edição (Dialog, Sheet, página dedicada)? → A: Dialog para Collaborator e Software; Sheet (painel lateral) para Machine (formulário mais denso com 15+ campos).
 - Q: Formulários devem incluir todos os campos do modelo ou apenas o subconjunto exibido na listagem? → A: Todos os campos do modelo. Campos condicionais (ex: date_fired quando fired=true) aparecem dinamicamente.
 - Q: Como o usuário acessa edição e exclusão a partir da listagem? → A: Coluna de ações no final de cada linha com botões de ícone (editar, excluir).
+- Q: Como o frontend deve registrar erros inesperados (não-validação) para debugging? → A: Console.error apenas. Toast já cobre feedback ao usuário (FR-004/FR-014). Sem infraestrutura de logging adicional.
+- Q: Qual o timeout de requisições HTTP quando a rede está indisponível? → A: 10 segundos (Axios request timeout). Formulário permanece aberto com dados preservados após timeout.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -112,7 +114,7 @@ O administrador de TI precisa encontrar rapidamente um colaborador, máquina ou 
 ### Edge Cases
 
 - O que acontece quando o usuário tenta criar um registro e a sessão JWT expirou? O interceptor Axios renova o token automaticamente e re-executa a requisição de criação.
-- O que acontece quando o usuário submete um formulário e perde conexão com a internet? Uma mensagem de erro de conectividade é exibida, o formulário permanece aberto com os dados preenchidos.
+- O que acontece quando o usuário submete um formulário e perde conexão com a internet? Após 10 segundos de timeout (FR-023), uma mensagem de erro de conectividade é exibida. O formulário permanece aberto com os dados preenchidos.
 - O que acontece quando dois usuários editam o mesmo registro simultaneamente? O último a salvar sobrescreve (last-write-wins) — não há controle de concorrência nesta versão.
 - O que acontece quando o usuário tenta excluir um colaborador que possui relações dependentes (emails, celulares, etc.) e o backend retorna erro 400/409? O frontend exibe a mensagem de erro do backend de forma compreensível.
 - O que acontece quando o formulário de criação de máquina não preenche o campo "hostname" (opcional)? O registro é criado com hostname vazio — o campo não é obrigatório.
@@ -150,6 +152,11 @@ O administrador de TI precisa encontrar rapidamente um colaborador, máquina ou 
 - **FR-013**: O sistema DEVE exibir mensagens de validação junto aos campos com erro quando o formulário é submetido com dados inválidos.
 - **FR-014**: Erros retornados pela API (campos duplicados, validação server-side) DEVEM ser exibidos ao usuário de forma compreensível.
 - **FR-015**: O sistema DEVE exibir estados de carregamento (loading) durante operações de criação, edição e exclusão para indicar que a ação está em andamento.
+
+**Observabilidade e Resiliência:**
+
+- **FR-022**: Erros inesperados (não-validação) nas operações de mutação DEVEM ser registrados via `console.error` para debugging. Nenhuma infraestrutura de logging adicional é necessária.
+- **FR-023**: Requisições HTTP do Axios DEVEM ter um timeout de 10 segundos. Quando o timeout é atingido, o formulário DEVE permanecer aberto com os dados preservados e uma mensagem de erro de conectividade DEVE ser exibida.
 
 **Campos por Entidade:**
 
