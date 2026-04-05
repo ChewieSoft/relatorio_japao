@@ -96,13 +96,14 @@ export const machinesHandlers = [
     const body = (await request.json()) as Record<string, unknown>
 
     const errors: Record<string, string[]> = {}
-    if (data.find((m) => m.service_tag === body.service_tag)) {
+    const active = activeRecords()
+    if (active.find((m) => m.service_tag === body.service_tag)) {
       errors.service_tag = ['machine com este service tag já existe.']
     }
-    if (data.find((m) => m.ip === body.ip)) {
+    if (active.find((m) => m.ip === body.ip)) {
       errors.ip = ['machine com este ip já existe.']
     }
-    if (data.find((m) => m.mac_address === body.mac_address)) {
+    if (active.find((m) => m.mac_address === body.mac_address)) {
       errors.mac_address = ['machine com este mac address já existe.']
     }
     if (Object.keys(errors).length > 0) {
@@ -119,7 +120,7 @@ export const machinesHandlers = [
       ip: body.ip as string,
       mac_address: body.mac_address as string,
       operational_system: body.operacional_system as string,
-      encrypted: body.crypto_disk as boolean ?? false,
+      encrypted: (body.crypto_disk ?? false) as boolean,
       antivirus: false,
       collaborator_id: null,
       collaborator_name: '',
@@ -135,7 +136,8 @@ export const machinesHandlers = [
 
   /** Atualiza máquina existente. */
   http.put(`${BASE}/machines/:id/`, async ({ params, request }) => {
-    const idx = data.findIndex((m) => m.id === Number(params.id))
+    const id = Number(params.id)
+    const idx = data.findIndex((m) => m.id === id && !deletedIds.has(m.id))
     if (idx === -1) {
       return new HttpResponse(null, { status: 404 })
     }

@@ -128,10 +128,10 @@ const SoftwarePage = () => {
       </div>
 
       <SoftwareForm
-        open={crud.formOpen}
+        open={crud.formOpen && (crud.editingId === null || !!editData)}
         onOpenChange={crud.handleFormClose}
         onSave={crud.handleSave}
-        initialData={crud.editingId && editData ? editData : undefined}
+        initialData={crud.editingId !== null && editData ? editData : undefined}
         isLoading={crud.isSaving}
         serverErrors={crud.serverErrors}
       />

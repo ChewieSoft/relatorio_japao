@@ -125,8 +125,13 @@ describe('machineSchema', () => {
     expect(result.success).toBe(true)
   })
 
-  it('rejeita IP inválido', () => {
+  it('rejeita IP com formato textual', () => {
     const result = machineSchema.safeParse({ ...validMachine, ip: 'not-an-ip' })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejeita IP com octetos fora do range 0-255', () => {
+    const result = machineSchema.safeParse({ ...validMachine, ip: '999.999.999.999' })
     expect(result.success).toBe(false)
   })
 

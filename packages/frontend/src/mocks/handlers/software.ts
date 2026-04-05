@@ -106,7 +106,8 @@ export const softwareHandlers = [
 
   /** Atualiza software existente. */
   http.put(`${BASE}/software/:id/`, async ({ params, request }) => {
-    const idx = data.findIndex((s) => s.id === Number(params.id))
+    const id = Number(params.id)
+    const idx = data.findIndex((s) => s.id === id && !deletedIds.has(s.id))
     if (idx === -1) {
       return new HttpResponse(null, { status: 404 })
     }

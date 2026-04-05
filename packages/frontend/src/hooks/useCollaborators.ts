@@ -5,7 +5,7 @@
  * e mutations de criação, atualização e exclusão.
  * Transformações snake_case↔camelCase acontecem nesta camada.
  */
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import api from '../api/client'
 import type { PaginatedResponse } from '../types/api'
 import type { Collaborator, CollaboratorFormData } from '../types/entities'
@@ -44,6 +44,7 @@ export function useCollaborators(page = 1, search = '') {
         })),
       }
     },
+    placeholderData: keepPreviousData,
   })
 }
 

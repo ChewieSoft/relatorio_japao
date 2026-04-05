@@ -239,6 +239,7 @@ const MachineForm = ({ open, onOpenChange, onSave, initialData, isLoading, serve
               )} />
             </div>
 
+            <p className="text-sm font-medium text-muted-foreground pt-2">Criptografia</p>
             <div className="grid grid-cols-3 gap-4">
               <FormField control={form.control} name="cryptoDisk" render={({ field }) => (
                 <FormItem className="flex items-center justify-between rounded-md border p-3">

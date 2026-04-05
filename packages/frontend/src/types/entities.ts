@@ -165,7 +165,7 @@ export const machineSchema = z.object({
   ramMemory: z.string().min(1, 'Memória RAM é obrigatória').max(50),
   diskMemory: z.string().min(1, 'Disco é obrigatório').max(50),
   ip: z.string().min(1, 'IP é obrigatório').max(45)
-    .regex(/^(\d{1,3}\.){3}\d{1,3}$/, 'Formato de IP inválido'),
+    .regex(/^((25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(25[0-5]|2[0-4]\d|[01]?\d\d?)$/, 'Formato de IP inválido'),
   macAddress: z.string().min(1, 'Endereço MAC é obrigatório').max(17)
     .regex(/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/, 'Formato de MAC inválido'),
   administrator: z.string().min(1, 'Administrador é obrigatório').max(255),

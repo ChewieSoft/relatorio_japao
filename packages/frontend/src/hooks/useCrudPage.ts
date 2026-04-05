@@ -10,7 +10,7 @@
  */
 import { useState } from "react"
 import { toast } from "sonner"
-import { AxiosError } from "axios"
+import { isAxiosError } from "axios"
 import type { UseMutationResult } from "@tanstack/react-query"
 
 interface CrudPageOptions<TFormData, TCreateResult, TUpdateResult> {
@@ -69,9 +69,8 @@ export function useCrudPage<TFormData, TCreateResult = unknown, TUpdateResult = 
   }
 
   const handleApiError = (error: Error, action: string) => {
-    const axiosError = error as AxiosError<Record<string, string[]>>
-    if (axiosError.response?.status === 400 && axiosError.response.data) {
-      setServerErrors(axiosError.response.data)
+    if (isAxiosError<Record<string, string[]>>(error) && error.response?.status === 400 && error.response.data) {
+      setServerErrors(error.response.data)
     } else {
       toast.error(`Erro ao ${action} ${entityLabel.toLowerCase()}.`)
     }
@@ -79,7 +78,7 @@ export function useCrudPage<TFormData, TCreateResult = unknown, TUpdateResult = 
 
   const handleSave = (formData: TFormData) => {
     setServerErrors(undefined)
-    if (editingId) {
+    if (editingId !== null) {
       updateMutation.mutate({ id: editingId, data: formData }, {
         onSuccess: () => {
           setFormOpen(false)
@@ -108,7 +107,6 @@ export function useCrudPage<TFormData, TCreateResult = unknown, TUpdateResult = 
       },
       onError: () => {
         toast.error(`Erro ao excluir ${entityLabel.toLowerCase()}.`)
-        setDeletingEntity(null)
       },
     })
   }

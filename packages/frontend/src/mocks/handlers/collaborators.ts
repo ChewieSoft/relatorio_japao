@@ -89,19 +89,15 @@ export const collaboratorsHandlers = [
   http.post(`${BASE}/collaborators/`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>
 
-    const duplicate = activeRecords().find(
-      (c) =>
-        c.name.toLowerCase() === String(body.full_name || '').toLowerCase() ||
-        c.domain_user.toLowerCase() === String(body.domain_user || '').toLowerCase()
-    )
-    if (duplicate) {
-      const errors: Record<string, string[]> = {}
-      if (duplicate.name.toLowerCase() === String(body.full_name || '').toLowerCase()) {
-        errors.full_name = ['collaborator com este full name já existe.']
-      }
-      if (duplicate.domain_user.toLowerCase() === String(body.domain_user || '').toLowerCase()) {
-        errors.domain_user = ['collaborator com este domain user já existe.']
-      }
+    const errors: Record<string, string[]> = {}
+    const active = activeRecords()
+    if (active.find((c) => c.name.toLowerCase() === String(body.full_name || '').toLowerCase())) {
+      errors.full_name = ['collaborator com este full name já existe.']
+    }
+    if (active.find((c) => c.domain_user.toLowerCase() === String(body.domain_user || '').toLowerCase())) {
+      errors.domain_user = ['collaborator com este domain user já existe.']
+    }
+    if (Object.keys(errors).length > 0) {
       return HttpResponse.json(errors, { status: 400 })
     }
 
@@ -112,11 +108,11 @@ export const collaboratorsHandlers = [
       name: body.full_name as string,
       domain_user: body.domain_user as string,
       department: body.office as string,
-      status: body.status as boolean ?? true,
-      fired: body.fired as boolean ?? false,
+      status: (body.status ?? true) as boolean,
+      fired: (body.fired ?? false) as boolean,
       has_server_access: false,
       has_erp_access: false,
-      has_internet_access: body.perm_acess_internet as boolean ?? false,
+      has_internet_access: (body.perm_acess_internet ?? false) as boolean,
       has_cellphone: false,
       email: '',
     }
@@ -149,7 +145,8 @@ export const collaboratorsHandlers = [
 
   /** Atualiza colaborador existente. */
   http.put(`${BASE}/collaborators/:id/`, async ({ params, request }) => {
-    const idx = data.findIndex((c) => c.id === Number(params.id))
+    const id = Number(params.id)
+    const idx = data.findIndex((c) => c.id === id && !deletedIds.has(c.id))
     if (idx === -1) {
       return new HttpResponse(null, { status: 404 })
     }
