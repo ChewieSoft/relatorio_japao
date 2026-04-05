@@ -5,9 +5,6 @@
  * edição via Dialog com dados pré-preenchidos, exclusão com confirmação,
  * busca textual server-side com debounce e barra de uso de licenças.
  */
-import { useState } from "react";
-import { toast } from "sonner";
-import { AxiosError } from "axios";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import SearchInput from "@/components/SearchInput";
@@ -15,6 +12,7 @@ import SoftwareForm from "@/components/SoftwareForm";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import { TableSkeleton, TableError, TableEmpty, TablePagination } from "@/components/TableStates";
 import { useSoftware, useSoftwareDetail, useCreateSoftware, useUpdateSoftware, useDeleteSoftware } from "@/hooks/useSoftware";
+import { useCrudPage } from "@/hooks/useCrudPage";
 import type { SoftwareFormData } from "@/types/entities";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -24,6 +22,7 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 
 const PAGE_SIZE = 20;
 
+/** Mapeamento de tipos de licença para labels PT-BR. */
 const typeLabels: Record<string, string> = {
   perpetual: "Perpétua",
   subscription: "Assinatura",
@@ -31,101 +30,32 @@ const typeLabels: Record<string, string> = {
 };
 
 const SoftwarePage = () => {
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [deletingSoftware, setDeletingSoftware] = useState<{ id: number; name: string } | null>(null);
-  const [serverErrors, setServerErrors] = useState<Record<string, string[]> | undefined>();
-
-  const { data, isLoading, isError, refetch } = useSoftware(page, search);
-  const { data: editData } = useSoftwareDetail(editingId);
   const createMutation = useCreateSoftware();
   const updateMutation = useUpdateSoftware();
   const deleteMutation = useDeleteSoftware();
+
+  const crud = useCrudPage<SoftwareFormData>({
+    createMutation,
+    updateMutation,
+    deleteMutation,
+    entityLabel: "Software",
+  });
+
+  const { data, isLoading, isError, refetch } = useSoftware(crud.page, crud.search);
+  const { data: editData } = useSoftwareDetail(crud.editingId);
   const totalPages = data ? Math.ceil(data.count / PAGE_SIZE) : 0;
-
-  const handleCreate = () => {
-    setEditingId(null);
-    setServerErrors(undefined);
-    setFormOpen(true);
-  };
-
-  const handleEdit = (id: number) => {
-    setEditingId(id);
-    setServerErrors(undefined);
-    setFormOpen(true);
-  };
-
-  const handleSave = (formData: SoftwareFormData) => {
-    setServerErrors(undefined);
-    if (editingId) {
-      updateMutation.mutate({ id: editingId, data: formData }, {
-        onSuccess: () => {
-          setFormOpen(false);
-          setEditingId(null);
-          toast.success("Software atualizado com sucesso!");
-        },
-        onError: (error) => {
-          const axiosError = error as AxiosError<Record<string, string[]>>;
-          if (axiosError.response?.status === 400 && axiosError.response.data) {
-            setServerErrors(axiosError.response.data);
-          } else {
-            console.error("Erro ao atualizar software:", error);
-            toast.error("Erro ao atualizar software.");
-          }
-        },
-      });
-    } else {
-      createMutation.mutate(formData, {
-        onSuccess: () => {
-          setFormOpen(false);
-          toast.success("Software cadastrado com sucesso!");
-        },
-        onError: (error) => {
-          const axiosError = error as AxiosError<Record<string, string[]>>;
-          if (axiosError.response?.status === 400 && axiosError.response.data) {
-            setServerErrors(axiosError.response.data);
-          } else {
-            console.error("Erro ao cadastrar software:", error);
-            toast.error("Erro ao cadastrar software.");
-          }
-        },
-      });
-    }
-  };
-
-  const handleDelete = () => {
-    if (!deletingSoftware) return;
-    deleteMutation.mutate(deletingSoftware.id, {
-      onSuccess: () => {
-        setDeletingSoftware(null);
-        toast.success("Software excluído com sucesso!");
-      },
-      onError: (error) => {
-        console.error("Erro ao excluir software:", error);
-        toast.error("Erro ao excluir software.");
-        setDeletingSoftware(null);
-      },
-    });
-  };
-
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    setPage(1);
-  };
 
   return (
     <AppLayout>
       <PageHeader title="Software" subtitle="Controle de licenças de software">
-        <Button onClick={handleCreate}>
+        <Button onClick={crud.handleCreate}>
           <Plus className="w-4 h-4 mr-2" />
           Novo Software
         </Button>
       </PageHeader>
 
       <div className="mb-4">
-        <SearchInput value={search} onChange={handleSearchChange} placeholder="Buscar por nome ou chave de licença..." />
+        <SearchInput value={crud.search} onChange={crud.handleSearchChange} placeholder="Buscar por nome ou chave de licença..." />
       </div>
 
       <div className="bg-card rounded-xl border border-border overflow-hidden">
@@ -175,10 +105,10 @@ const SoftwarePage = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => handleEdit(s.id)}>
+                          <Button variant="ghost" size="icon" aria-label="Editar" onClick={() => crud.handleEdit(s.id)}>
                             <Pencil className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => setDeletingSoftware({ id: s.id, name: s.softwareName || s.licenseKey })}>
+                          <Button variant="ghost" size="icon" aria-label="Excluir" onClick={() => crud.setDeletingEntity({ id: s.id, name: s.softwareName || s.licenseKey })}>
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
@@ -191,27 +121,27 @@ const SoftwarePage = () => {
             </div>
 
             {totalPages > 1 && (
-              <TablePagination page={page} totalPages={totalPages} onPageChange={setPage} />
+              <TablePagination page={crud.page} totalPages={totalPages} onPageChange={crud.setPage} />
             )}
           </>
         )}
       </div>
 
       <SoftwareForm
-        open={formOpen}
-        onOpenChange={(open) => { if (!open) { setFormOpen(false); setEditingId(null); } }}
-        onSave={handleSave}
-        initialData={editingId && editData ? editData : undefined}
-        isLoading={createMutation.isPending || updateMutation.isPending}
-        serverErrors={serverErrors}
+        open={crud.formOpen}
+        onOpenChange={crud.handleFormClose}
+        onSave={crud.handleSave}
+        initialData={crud.editingId && editData ? editData : undefined}
+        isLoading={crud.isSaving}
+        serverErrors={crud.serverErrors}
       />
 
       <DeleteConfirmDialog
-        open={!!deletingSoftware}
-        onConfirm={handleDelete}
-        onCancel={() => setDeletingSoftware(null)}
-        entityName={deletingSoftware?.name || ''}
-        isLoading={deleteMutation.isPending}
+        open={!!crud.deletingEntity}
+        onConfirm={crud.handleDelete}
+        onCancel={() => crud.setDeletingEntity(null)}
+        entityName={crud.deletingEntity?.name || ''}
+        isLoading={crud.isDeleting}
       />
     </AppLayout>
   );

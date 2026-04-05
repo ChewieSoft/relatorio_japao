@@ -5,9 +5,6 @@
  * edição via Sheet com dados pré-preenchidos, exclusão com confirmação,
  * e busca textual server-side com debounce.
  */
-import { useState } from "react";
-import { toast } from "sonner";
-import { AxiosError } from "axios";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import SearchInput from "@/components/SearchInput";
@@ -15,6 +12,7 @@ import MachineForm from "@/components/MachineForm";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import { TableSkeleton, TableError, TableEmpty, TablePagination } from "@/components/TableStates";
 import { useMachines, useMachine, useCreateMachine, useUpdateMachine, useDeleteMachine } from "@/hooks/useMachines";
+import { useCrudPage } from "@/hooks/useCrudPage";
 import type { MachineFormData } from "@/types/entities";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -28,101 +26,32 @@ const BoolIcon = ({ value }: { value: boolean }) =>
   value ? <Check className="w-4 h-4 text-status-active" /> : <X className="w-4 h-4 text-destructive" />;
 
 const Machines = () => {
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [deletingMachine, setDeletingMachine] = useState<{ id: number; name: string } | null>(null);
-  const [serverErrors, setServerErrors] = useState<Record<string, string[]> | undefined>();
-
-  const { data, isLoading, isError, refetch } = useMachines(page, search);
-  const { data: editData } = useMachine(editingId);
   const createMutation = useCreateMachine();
   const updateMutation = useUpdateMachine();
   const deleteMutation = useDeleteMachine();
+
+  const crud = useCrudPage<MachineFormData>({
+    createMutation,
+    updateMutation,
+    deleteMutation,
+    entityLabel: "Máquina",
+  });
+
+  const { data, isLoading, isError, refetch } = useMachines(crud.page, crud.search);
+  const { data: editData } = useMachine(crud.editingId);
   const totalPages = data ? Math.ceil(data.count / PAGE_SIZE) : 0;
-
-  const handleCreate = () => {
-    setEditingId(null);
-    setServerErrors(undefined);
-    setFormOpen(true);
-  };
-
-  const handleEdit = (id: number) => {
-    setEditingId(id);
-    setServerErrors(undefined);
-    setFormOpen(true);
-  };
-
-  const handleSave = (formData: MachineFormData) => {
-    setServerErrors(undefined);
-    if (editingId) {
-      updateMutation.mutate({ id: editingId, data: formData }, {
-        onSuccess: () => {
-          setFormOpen(false);
-          setEditingId(null);
-          toast.success("Máquina atualizada com sucesso!");
-        },
-        onError: (error) => {
-          const axiosError = error as AxiosError<Record<string, string[]>>;
-          if (axiosError.response?.status === 400 && axiosError.response.data) {
-            setServerErrors(axiosError.response.data);
-          } else {
-            console.error("Erro ao atualizar máquina:", error);
-            toast.error("Erro ao atualizar máquina.");
-          }
-        },
-      });
-    } else {
-      createMutation.mutate(formData, {
-        onSuccess: () => {
-          setFormOpen(false);
-          toast.success("Máquina cadastrada com sucesso!");
-        },
-        onError: (error) => {
-          const axiosError = error as AxiosError<Record<string, string[]>>;
-          if (axiosError.response?.status === 400 && axiosError.response.data) {
-            setServerErrors(axiosError.response.data);
-          } else {
-            console.error("Erro ao cadastrar máquina:", error);
-            toast.error("Erro ao cadastrar máquina.");
-          }
-        },
-      });
-    }
-  };
-
-  const handleDelete = () => {
-    if (!deletingMachine) return;
-    deleteMutation.mutate(deletingMachine.id, {
-      onSuccess: () => {
-        setDeletingMachine(null);
-        toast.success("Máquina excluída com sucesso!");
-      },
-      onError: (error) => {
-        console.error("Erro ao excluir máquina:", error);
-        toast.error("Erro ao excluir máquina.");
-        setDeletingMachine(null);
-      },
-    });
-  };
-
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    setPage(1);
-  };
 
   return (
     <AppLayout>
       <PageHeader title="Máquinas" subtitle="Inventário de computadores e notebooks">
-        <Button onClick={handleCreate}>
+        <Button onClick={crud.handleCreate}>
           <Plus className="w-4 h-4 mr-2" />
           Nova Máquina
         </Button>
       </PageHeader>
 
       <div className="mb-4">
-        <SearchInput value={search} onChange={handleSearchChange} placeholder="Buscar por hostname, modelo, tag ou IP..." />
+        <SearchInput value={crud.search} onChange={crud.handleSearchChange} placeholder="Buscar por hostname, modelo, tag ou IP..." />
       </div>
 
       <div className="bg-card rounded-xl border border-border overflow-hidden">
@@ -169,10 +98,10 @@ const Machines = () => {
                     <TableCell className="text-center"><BoolIcon value={m.antivirus} /></TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => handleEdit(m.id)}>
+                        <Button variant="ghost" size="icon" aria-label="Editar" onClick={() => crud.handleEdit(m.id)}>
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => setDeletingMachine({ id: m.id, name: `${m.hostname} (${m.serviceTag})` })}>
+                        <Button variant="ghost" size="icon" aria-label="Excluir" onClick={() => crud.setDeletingEntity({ id: m.id, name: `${m.hostname} (${m.serviceTag})` })}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -184,27 +113,27 @@ const Machines = () => {
             </div>
 
             {totalPages > 1 && (
-              <TablePagination page={page} totalPages={totalPages} onPageChange={setPage} />
+              <TablePagination page={crud.page} totalPages={totalPages} onPageChange={crud.setPage} />
             )}
           </>
         )}
       </div>
 
       <MachineForm
-        open={formOpen}
-        onOpenChange={(open) => { if (!open) { setFormOpen(false); setEditingId(null); } }}
-        onSave={handleSave}
-        initialData={editingId && editData ? editData : undefined}
-        isLoading={createMutation.isPending || updateMutation.isPending}
-        serverErrors={serverErrors}
+        open={crud.formOpen}
+        onOpenChange={crud.handleFormClose}
+        onSave={crud.handleSave}
+        initialData={crud.editingId && editData ? editData : undefined}
+        isLoading={crud.isSaving}
+        serverErrors={crud.serverErrors}
       />
 
       <DeleteConfirmDialog
-        open={!!deletingMachine}
-        onConfirm={handleDelete}
-        onCancel={() => setDeletingMachine(null)}
-        entityName={deletingMachine?.name || ''}
-        isLoading={deleteMutation.isPending}
+        open={!!crud.deletingEntity}
+        onConfirm={crud.handleDelete}
+        onCancel={() => crud.setDeletingEntity(null)}
+        entityName={crud.deletingEntity?.name || ''}
+        isLoading={crud.isDeleting}
       />
     </AppLayout>
   );

@@ -39,7 +39,7 @@ const DeleteConfirmDialog = ({ open, onConfirm, onCancel, entityName, isLoading 
       <AlertDialogHeader>
         <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
         <AlertDialogDescription>
-          Tem certeza que deseja excluir <strong>{entityName}</strong>? Esta ação não pode ser desfeita.
+          Tem certeza que deseja excluir <strong>{entityName}</strong>? O registro será desativado.
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>

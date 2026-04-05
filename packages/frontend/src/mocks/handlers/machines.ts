@@ -15,6 +15,14 @@ const PAGE_SIZE = 20
 let data = [...machines]
 let nextId = data.length + 1
 
+/** IDs marcados como soft-deleted (simula deleted_at != null). */
+const deletedIds = new Set<number>()
+
+/** Retorna registros ativos (não soft-deleted). */
+function activeRecords() {
+  return data.filter((m) => !deletedIds.has(m.id))
+}
+
 /** Converte registro list para formato detail (campos do modelo). */
 function toDetail(record: (typeof data)[number]) {
   return {
@@ -50,9 +58,9 @@ export const machinesHandlers = [
     const page = Number(url.searchParams.get('page') || '1')
     const search = (url.searchParams.get('search') || '').toLowerCase()
 
-    let filtered = data
+    let filtered = activeRecords()
     if (search) {
-      filtered = data.filter(
+      filtered = filtered.filter(
         (m) =>
           m.hostname.toLowerCase().includes(search) ||
           m.model.toLowerCase().includes(search) ||
@@ -75,7 +83,8 @@ export const machinesHandlers = [
 
   /** Retorna detalhe de uma máquina (campos do modelo, sem aliases). */
   http.get(`${BASE}/machines/:id/`, ({ params }) => {
-    const record = data.find((m) => m.id === Number(params.id))
+    const id = Number(params.id)
+    const record = data.find((m) => m.id === id && !deletedIds.has(m.id))
     if (!record) {
       return new HttpResponse(null, { status: 404 })
     }
@@ -159,7 +168,7 @@ export const machinesHandlers = [
     if (idx === -1) {
       return new HttpResponse(null, { status: 404 })
     }
-    data.splice(idx, 1)
+    deletedIds.add(data[idx].id)
     return new HttpResponse(null, { status: 204 })
   }),
 ]

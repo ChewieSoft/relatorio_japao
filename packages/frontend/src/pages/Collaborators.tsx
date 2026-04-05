@@ -5,9 +5,6 @@
  * edição via Dialog com dados pré-preenchidos, exclusão com confirmação,
  * e busca textual server-side com debounce.
  */
-import { useState } from "react";
-import { toast } from "sonner";
-import { AxiosError } from "axios";
 import AppLayout from "@/components/AppLayout";
 import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
@@ -16,6 +13,7 @@ import CollaboratorForm from "@/components/CollaboratorForm";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import { TableSkeleton, TableError, TableEmpty, TablePagination } from "@/components/TableStates";
 import { useCollaborators, useCollaborator, useCreateCollaborator, useUpdateCollaborator, useDeleteCollaborator } from "@/hooks/useCollaborators";
+import { useCrudPage } from "@/hooks/useCrudPage";
 import type { CollaboratorFormData } from "@/types/entities";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -28,101 +26,32 @@ const BoolIcon = ({ value }: { value: boolean }) =>
   value ? <Check className="w-4 h-4 text-status-active" /> : <X className="w-4 h-4 text-status-inactive" />;
 
 const Collaborators = () => {
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [deletingCollaborator, setDeletingCollaborator] = useState<{ id: number; name: string } | null>(null);
-  const [serverErrors, setServerErrors] = useState<Record<string, string[]> | undefined>();
-
-  const { data, isLoading, isError, refetch } = useCollaborators(page, search);
-  const { data: editData } = useCollaborator(editingId);
   const createMutation = useCreateCollaborator();
   const updateMutation = useUpdateCollaborator();
   const deleteMutation = useDeleteCollaborator();
+
+  const crud = useCrudPage<CollaboratorFormData>({
+    createMutation,
+    updateMutation,
+    deleteMutation,
+    entityLabel: "Colaborador",
+  });
+
+  const { data, isLoading, isError, refetch } = useCollaborators(crud.page, crud.search);
+  const { data: editData } = useCollaborator(crud.editingId);
   const totalPages = data ? Math.ceil(data.count / PAGE_SIZE) : 0;
-
-  const handleCreate = () => {
-    setEditingId(null);
-    setServerErrors(undefined);
-    setFormOpen(true);
-  };
-
-  const handleEdit = (id: number) => {
-    setEditingId(id);
-    setServerErrors(undefined);
-    setFormOpen(true);
-  };
-
-  const handleSave = (formData: CollaboratorFormData) => {
-    setServerErrors(undefined);
-    if (editingId) {
-      updateMutation.mutate({ id: editingId, data: formData }, {
-        onSuccess: () => {
-          setFormOpen(false);
-          setEditingId(null);
-          toast.success("Colaborador atualizado com sucesso!");
-        },
-        onError: (error) => {
-          const axiosError = error as AxiosError<Record<string, string[]>>;
-          if (axiosError.response?.status === 400 && axiosError.response.data) {
-            setServerErrors(axiosError.response.data);
-          } else {
-            console.error("Erro ao atualizar colaborador:", error);
-            toast.error("Erro ao atualizar colaborador.");
-          }
-        },
-      });
-    } else {
-      createMutation.mutate(formData, {
-        onSuccess: () => {
-          setFormOpen(false);
-          toast.success("Colaborador cadastrado com sucesso!");
-        },
-        onError: (error) => {
-          const axiosError = error as AxiosError<Record<string, string[]>>;
-          if (axiosError.response?.status === 400 && axiosError.response.data) {
-            setServerErrors(axiosError.response.data);
-          } else {
-            console.error("Erro ao cadastrar colaborador:", error);
-            toast.error("Erro ao cadastrar colaborador.");
-          }
-        },
-      });
-    }
-  };
-
-  const handleDelete = () => {
-    if (!deletingCollaborator) return;
-    deleteMutation.mutate(deletingCollaborator.id, {
-      onSuccess: () => {
-        setDeletingCollaborator(null);
-        toast.success("Colaborador excluído com sucesso!");
-      },
-      onError: (error) => {
-        console.error("Erro ao excluir colaborador:", error);
-        toast.error("Erro ao excluir colaborador.");
-        setDeletingCollaborator(null);
-      },
-    });
-  };
-
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    setPage(1);
-  };
 
   return (
     <AppLayout>
       <PageHeader title="Colaboradores" subtitle="Cadastro de funcionários da JRC Brasil">
-        <Button onClick={handleCreate}>
+        <Button onClick={crud.handleCreate}>
           <Plus className="w-4 h-4 mr-2" />
           Novo Colaborador
         </Button>
       </PageHeader>
 
       <div className="mb-4">
-        <SearchInput value={search} onChange={handleSearchChange} placeholder="Buscar por nome ou domínio..." />
+        <SearchInput value={crud.search} onChange={crud.handleSearchChange} placeholder="Buscar por nome ou domínio..." />
       </div>
 
       <div className="bg-card rounded-xl border border-border overflow-hidden">
@@ -164,10 +93,10 @@ const Collaborators = () => {
                     <TableCell className="text-center"><BoolIcon value={c.hasCellphone} /></TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => handleEdit(c.id)}>
+                        <Button variant="ghost" size="icon" aria-label="Editar" onClick={() => crud.handleEdit(c.id)}>
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => setDeletingCollaborator({ id: c.id, name: c.name })}>
+                        <Button variant="ghost" size="icon" aria-label="Excluir" onClick={() => crud.setDeletingEntity({ id: c.id, name: c.name })}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -179,27 +108,27 @@ const Collaborators = () => {
             </div>
 
             {totalPages > 1 && (
-              <TablePagination page={page} totalPages={totalPages} onPageChange={setPage} />
+              <TablePagination page={crud.page} totalPages={totalPages} onPageChange={crud.setPage} />
             )}
           </>
         )}
       </div>
 
       <CollaboratorForm
-        open={formOpen}
-        onOpenChange={(open) => { if (!open) { setFormOpen(false); setEditingId(null); } }}
-        onSave={handleSave}
-        initialData={editingId && editData ? editData : undefined}
-        isLoading={createMutation.isPending || updateMutation.isPending}
-        serverErrors={serverErrors}
+        open={crud.formOpen}
+        onOpenChange={crud.handleFormClose}
+        onSave={crud.handleSave}
+        initialData={crud.editingId && editData ? editData : undefined}
+        isLoading={crud.isSaving}
+        serverErrors={crud.serverErrors}
       />
 
       <DeleteConfirmDialog
-        open={!!deletingCollaborator}
-        onConfirm={handleDelete}
-        onCancel={() => setDeletingCollaborator(null)}
-        entityName={deletingCollaborator?.name || ''}
-        isLoading={deleteMutation.isPending}
+        open={!!crud.deletingEntity}
+        onConfirm={crud.handleDelete}
+        onCancel={() => crud.setDeletingEntity(null)}
+        entityName={crud.deletingEntity?.name || ''}
+        isLoading={crud.isDeleting}
       />
     </AppLayout>
   );

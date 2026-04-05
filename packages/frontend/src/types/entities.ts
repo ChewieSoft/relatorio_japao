@@ -6,6 +6,8 @@
  * nos hooks de React Query (camada boundary).
  */
 
+import { z } from 'zod'
+
 /** Funcionário da JRC Brasil com dados de domínio e permissões. */
 export interface Collaborator {
   id: number
@@ -81,8 +83,6 @@ export interface DashboardStats {
 // ---------------------------------------------------------------------------
 // FormData types — campos camelCase usados pelo react-hook-form
 // ---------------------------------------------------------------------------
-
-import { z } from 'zod'
 
 /** Dados do formulário de colaborador (create/edit). */
 export interface CollaboratorFormData {
@@ -195,6 +195,9 @@ export const softwareSchema = z.object({
   expiresAt: z.string(),
   observation: z.string(),
 }).refine(
+  (data) => data.onUse <= data.quantity,
+  { message: 'Quantidade em uso não pode exceder a quantidade total', path: ['onUse'] }
+).refine(
   (data) => data.typeLicence !== 'subscription' || data.expiresAt.length > 0,
   { message: 'Data de expiração é obrigatória para assinatura', path: ['expiresAt'] }
 )
