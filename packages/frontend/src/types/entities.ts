@@ -249,7 +249,7 @@ export function toMachinePayload(data: MachineFormData): Record<string, unknown>
 /** Converte dados do formulário de software para payload snake_case da API. */
 export function toSoftwarePayload(data: SoftwareFormData): Record<string, unknown> {
   return {
-    software_name: data.softwareName || null,
+    software_name: data.softwareName,
     key: data.key,
     type_licence: data.typeLicence,
     quantity: data.quantity,
@@ -262,58 +262,74 @@ export function toSoftwarePayload(data: SoftwareFormData): Record<string, unknow
   }
 }
 
+/** Coerce segura para string (protege contra null/undefined da API). */
+function str(value: unknown, fallback = ''): string {
+  return typeof value === 'string' ? value : fallback
+}
+
+/** Coerce segura para boolean (protege contra tipos inesperados da API). */
+function bool(value: unknown, fallback = false): boolean {
+  return typeof value === 'boolean' ? value : fallback
+}
+
+/** Coerce segura para number (protege contra tipos inesperados da API). */
+function num(value: unknown, fallback = 0): number {
+  return typeof value === 'number' ? value : fallback
+}
+
 /** Converte resposta detail da API (snake_case) para CollaboratorFormData (camelCase). */
 export function toCollaboratorFormData(raw: Record<string, unknown>): CollaboratorFormData {
   return {
-    fullName: (raw.full_name as string) || '',
-    domainUser: (raw.domain_user as string) || '',
-    office: (raw.office as string) || '',
-    status: raw.status as boolean ?? true,
-    fired: raw.fired as boolean ?? false,
-    dateHired: ((raw.date_hired as string) || '').slice(0, 10),
-    dateFired: ((raw.date_fired as string) || '').slice(0, 10),
-    permAcessInternet: raw.perm_acess_internet as boolean ?? false,
-    acessWifi: raw.acess_wifi as boolean ?? false,
-    adminPrivilege: raw.admin_privilege as boolean ?? false,
+    fullName: str(raw.full_name),
+    domainUser: str(raw.domain_user),
+    office: str(raw.office),
+    status: bool(raw.status, true),
+    fired: bool(raw.fired),
+    dateHired: str(raw.date_hired).slice(0, 10),
+    dateFired: str(raw.date_fired).slice(0, 10),
+    permAcessInternet: bool(raw.perm_acess_internet),
+    acessWifi: bool(raw.acess_wifi),
+    adminPrivilege: bool(raw.admin_privilege),
   }
 }
 
 /** Converte resposta detail da API (snake_case) para MachineFormData (camelCase). */
 export function toMachineFormData(raw: Record<string, unknown>): MachineFormData {
+  const rawType = str(raw.type)
   return {
-    hostname: (raw.hostname as string) || '',
-    model: (raw.model as string) || '',
-    type: (raw.type as 'desktop' | 'notebook') || 'desktop',
-    serviceTag: (raw.service_tag as string) || '',
-    operacionalSystem: (raw.operacional_system as string) || '',
-    ramMemory: (raw.ram_memory as string) || '',
-    diskMemory: (raw.disk_memory as string) || '',
-    ip: (raw.ip as string) || '',
-    macAddress: (raw.mac_address as string) || '',
-    administrator: (raw.administrator as string) || '',
-    codJdb: (raw.cod_jdb as string) || '',
-    datePurchase: ((raw.date_purchase as string) || '').slice(0, 10),
-    quantity: (raw.quantity as number) ?? 1,
-    cryptoDisk: raw.crypto_disk as boolean ?? false,
-    cryptoUsb: raw.crypto_usb as boolean ?? false,
-    cryptoMemoryCard: raw.crypto_memory_card as boolean ?? false,
-    soldOut: raw.sold_out as boolean ?? false,
-    dateSoldOut: ((raw.date_sold_out as string) || '').slice(0, 10),
+    hostname: str(raw.hostname),
+    model: str(raw.model),
+    type: rawType === 'notebook' ? 'notebook' : 'desktop',
+    serviceTag: str(raw.service_tag),
+    operacionalSystem: str(raw.operacional_system),
+    ramMemory: str(raw.ram_memory),
+    diskMemory: str(raw.disk_memory),
+    ip: str(raw.ip),
+    macAddress: str(raw.mac_address),
+    administrator: str(raw.administrator),
+    codJdb: str(raw.cod_jdb),
+    datePurchase: str(raw.date_purchase).slice(0, 10),
+    quantity: num(raw.quantity, 1),
+    cryptoDisk: bool(raw.crypto_disk),
+    cryptoUsb: bool(raw.crypto_usb),
+    cryptoMemoryCard: bool(raw.crypto_memory_card),
+    soldOut: bool(raw.sold_out),
+    dateSoldOut: str(raw.date_sold_out).slice(0, 10),
   }
 }
 
 /** Converte resposta detail da API (snake_case) para SoftwareFormData (camelCase). */
 export function toSoftwareFormData(raw: Record<string, unknown>): SoftwareFormData {
   return {
-    softwareName: (raw.software_name as string) || '',
-    key: (raw.key as string) || '',
-    typeLicence: (raw.type_licence as string) || '',
-    quantity: (raw.quantity as number) ?? 0,
-    quantityPurchase: (raw.quantity_purchase as number) ?? 0,
-    onUse: (raw.on_use as number) ?? 0,
-    departament: (raw.departament as string) || '',
-    lastPurchaseDate: ((raw.last_purchase_date as string) || '').slice(0, 10),
-    expiresAt: ((raw.expires_at as string) || '').slice(0, 10),
-    observation: (raw.observation as string) || '',
+    softwareName: str(raw.software_name),
+    key: str(raw.key),
+    typeLicence: str(raw.type_licence),
+    quantity: num(raw.quantity),
+    quantityPurchase: num(raw.quantity_purchase),
+    onUse: num(raw.on_use),
+    departament: str(raw.departament),
+    lastPurchaseDate: str(raw.last_purchase_date).slice(0, 10),
+    expiresAt: str(raw.expires_at).slice(0, 10),
+    observation: str(raw.observation),
   }
 }

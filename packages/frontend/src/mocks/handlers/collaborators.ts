@@ -89,7 +89,7 @@ export const collaboratorsHandlers = [
   http.post(`${BASE}/collaborators/`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>
 
-    const duplicate = data.find(
+    const duplicate = activeRecords().find(
       (c) =>
         c.name.toLowerCase() === String(body.full_name || '').toLowerCase() ||
         c.domain_user.toLowerCase() === String(body.domain_user || '').toLowerCase()
