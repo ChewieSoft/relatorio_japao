@@ -120,11 +120,15 @@ export interface MachineFormData {
   dateSoldOut: string
 }
 
+/** Tipos válidos de licença de software. */
+export type LicenseType = 'perpetual' | 'subscription' | 'oem'
+
 /** Dados do formulário de software (create/edit). */
 export interface SoftwareFormData {
   softwareName: string
   key: string
-  typeLicence: string
+  /** Tipo da licença ou `''` enquanto o Select está sem seleção. */
+  typeLicence: LicenseType | ''
   quantity: number
   quantityPurchase: number
   onUse: number
@@ -182,11 +186,19 @@ export const machineSchema = z.object({
   { message: 'Data de baixa é obrigatória quando em baixa patrimonial', path: ['dateSoldOut'] }
 )
 
+/** Valores aceitos para `typeLicence`, usados tanto no form quanto na validação. */
+const LICENSE_TYPE_VALUES = ['perpetual', 'subscription', 'oem'] as const
+
 /** Schema de validação para formulário de software. */
 export const softwareSchema = z.object({
   softwareName: z.string().max(255),
   key: z.string().min(1, 'Chave de licença é obrigatória').max(255),
-  typeLicence: z.string().min(1, 'Tipo de licença é obrigatório').max(50),
+  typeLicence: z.string()
+    .min(1, 'Tipo de licença é obrigatório')
+    .refine(
+      (v): v is LicenseType => (LICENSE_TYPE_VALUES as readonly string[]).includes(v),
+      { message: 'Tipo de licença inválido' },
+    ),
   quantity: z.number().int('Quantidade deve ser um número inteiro').min(0, 'Quantidade não pode ser negativa'),
   quantityPurchase: z.number().int('Quantidade comprada deve ser um número inteiro').min(0, 'Quantidade comprada não pode ser negativa'),
   onUse: z.number().int('Quantidade em uso deve ser um número inteiro').min(0, 'Quantidade em uso não pode ser negativa'),
@@ -263,18 +275,38 @@ export function toSoftwarePayload(data: SoftwareFormData): Record<string, unknow
 }
 
 /** Coerce segura para string (protege contra null/undefined da API). */
-function str(value: unknown, fallback = ''): string {
+export function str(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : fallback
 }
 
 /** Coerce segura para boolean (protege contra tipos inesperados da API). */
-function bool(value: unknown, fallback = false): boolean {
+export function bool(value: unknown, fallback = false): boolean {
   return typeof value === 'boolean' ? value : fallback
 }
 
 /** Coerce segura para number (protege contra tipos inesperados da API). */
-function num(value: unknown, fallback = 0): number {
-  return typeof value === 'number' ? value : fallback
+export function num(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback
+}
+
+/** Coerce segura para `number | null` (protege contra tipos inesperados da API). */
+export function nullableNum(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
+/** Coerce segura para `string | null` (protege contra tipos inesperados da API). */
+export function nullableStr(value: unknown): string | null {
+  return typeof value === 'string' ? value : null
+}
+
+/** Coerce `type` de máquina para o literal válido, com `desktop` como fallback seguro. */
+export function toMachineType(value: unknown): 'desktop' | 'notebook' {
+  return value === 'notebook' ? 'notebook' : 'desktop'
+}
+
+/** Coerce `license_type` de software para o literal válido, com `perpetual` como fallback seguro. */
+export function toLicenseType(value: unknown): LicenseType {
+  return value === 'subscription' || value === 'oem' ? value : 'perpetual'
 }
 
 /** Converte resposta detail da API (snake_case) para CollaboratorFormData (camelCase). */
@@ -320,10 +352,13 @@ export function toMachineFormData(raw: Record<string, unknown>): MachineFormData
 
 /** Converte resposta detail da API (snake_case) para SoftwareFormData (camelCase). */
 export function toSoftwareFormData(raw: Record<string, unknown>): SoftwareFormData {
+  const rawType = raw.type_licence
+  const typeLicence: SoftwareFormData['typeLicence'] =
+    rawType === 'perpetual' || rawType === 'subscription' || rawType === 'oem' ? rawType : ''
   return {
     softwareName: str(raw.software_name),
     key: str(raw.key),
-    typeLicence: str(raw.type_licence),
+    typeLicence,
     quantity: num(raw.quantity),
     quantityPurchase: num(raw.quantity_purchase),
     onUse: num(raw.on_use),
@@ -331,5 +366,79 @@ export function toSoftwareFormData(raw: Record<string, unknown>): SoftwareFormDa
     lastPurchaseDate: str(raw.last_purchase_date).slice(0, 10),
     expiresAt: str(raw.expires_at).slice(0, 10),
     observation: str(raw.observation),
+  }
+}
+
+// ---------------------------------------------------------------------------
+// List mappers — camelCase list items com coerção segura de unknown
+// ---------------------------------------------------------------------------
+
+/**
+ * Converte um registro bruto da lista da API para `Collaborator` com coerção segura.
+ *
+ * Usa helpers `str`/`bool` para evitar que `null`/`undefined` vindos da API
+ * vazem para a UI como literal `undefined`/`null`.
+ *
+ * @param raw - Objeto bruto de um item da lista `/api/collaborators/`.
+ * @returns Instância `Collaborator` pronta para uso pelo frontend.
+ */
+export function toCollaborator(raw: Record<string, unknown>): Collaborator {
+  return {
+    id: num(raw.id),
+    name: str(raw.name),
+    domainUser: str(raw.domain_user),
+    department: str(raw.department),
+    status: bool(raw.status),
+    fired: bool(raw.fired),
+    hasServerAccess: bool(raw.has_server_access),
+    hasErpAccess: bool(raw.has_erp_access),
+    hasInternetAccess: bool(raw.has_internet_access),
+    hasCellphone: bool(raw.has_cellphone),
+    email: str(raw.email),
+  }
+}
+
+/**
+ * Converte um registro bruto da lista da API para `Machine` com coerção segura.
+ *
+ * Aplica `toMachineType` no campo `machine_type` e `nullableNum` em `collaborator_id`.
+ *
+ * @param raw - Objeto bruto de um item da lista `/api/machines/`.
+ * @returns Instância `Machine` pronta para uso pelo frontend.
+ */
+export function toMachine(raw: Record<string, unknown>): Machine {
+  return {
+    id: num(raw.id),
+    hostname: str(raw.hostname),
+    model: str(raw.model),
+    serviceTag: str(raw.service_tag),
+    ip: str(raw.ip),
+    macAddress: str(raw.mac_address),
+    operationalSystem: str(raw.operational_system),
+    encrypted: bool(raw.encrypted),
+    antivirus: bool(raw.antivirus),
+    collaboratorId: nullableNum(raw.collaborator_id),
+    collaboratorName: str(raw.collaborator_name),
+    machineType: toMachineType(raw.machine_type),
+  }
+}
+
+/**
+ * Converte um registro bruto da lista da API para `Software` com coerção segura.
+ *
+ * Aplica `toLicenseType` em `license_type` e trata `expires_at` como `string | null`.
+ *
+ * @param raw - Objeto bruto de um item da lista `/api/software/`.
+ * @returns Instância `Software` pronta para uso pelo frontend.
+ */
+export function toSoftware(raw: Record<string, unknown>): Software {
+  return {
+    id: num(raw.id),
+    softwareName: str(raw.software_name),
+    licenseKey: str(raw.license_key),
+    licenseType: toLicenseType(raw.license_type),
+    quantity: num(raw.quantity),
+    inUse: num(raw.in_use),
+    expiresAt: nullableStr(raw.expires_at),
   }
 }

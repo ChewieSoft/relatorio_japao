@@ -18,7 +18,6 @@ import type { CollaboratorFormData } from "@/types/entities";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Check, X, Plus, Pencil, Trash2 } from "lucide-react";
-import { useRef } from "react";
 
 const PAGE_SIZE = 20;
 
@@ -31,22 +30,22 @@ const Collaborators = () => {
   const updateMutation = useUpdateCollaborator();
   const deleteMutation = useDeleteCollaborator();
 
-  // Ref atualizado a cada render para expor o tamanho da página atual ao hook
-  // sem depender da ordem de declaração das variáveis.
-  const pageItemCountRef = useRef(0);
-
   const crud = useCrudPage<CollaboratorFormData>({
     createMutation,
     updateMutation,
     deleteMutation,
     entityLabel: "Colaborador",
-    getCurrentPageItemCount: () => pageItemCountRef.current,
   });
 
   const { data, isLoading, isError, refetch } = useCollaborators(crud.page, crud.search);
   const { data: editData } = useCollaborator(crud.editingId);
-  pageItemCountRef.current = data?.results.length ?? 0;
   const totalPages = data ? Math.ceil(data.count / PAGE_SIZE) : 0;
+
+  // Informa ao hook a quantidade de itens exibidos nesta página para que
+  // `handleDelete` possa voltar uma página automaticamente ao excluir o último
+  // item de uma página > 1. O hook mantém esse valor em um ref sincronizado
+  // via useEffect.
+  crud.setCurrentPageItemCount(data?.results.length ?? 0);
 
   return (
     <AppLayout>

@@ -19,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-import { useRef } from "react";
 
 const PAGE_SIZE = 20;
 
@@ -35,22 +34,21 @@ const SoftwarePage = () => {
   const updateMutation = useUpdateSoftware();
   const deleteMutation = useDeleteSoftware();
 
-  // Ref atualizado a cada render para expor o tamanho da página atual ao hook
-  // sem depender da ordem de declaração das variáveis.
-  const pageItemCountRef = useRef(0);
-
   const crud = useCrudPage<SoftwareFormData>({
     createMutation,
     updateMutation,
     deleteMutation,
     entityLabel: "Software",
-    getCurrentPageItemCount: () => pageItemCountRef.current,
   });
 
   const { data, isLoading, isError, refetch } = useSoftware(crud.page, crud.search);
   const { data: editData } = useSoftwareDetail(crud.editingId);
-  pageItemCountRef.current = data?.results.length ?? 0;
   const totalPages = data ? Math.ceil(data.count / PAGE_SIZE) : 0;
+
+  // Sincroniza a quantidade de itens exibidos nesta página com o ref interno
+  // do hook para permitir que `handleDelete` volte de página ao remover o
+  // último item de uma página > 1.
+  crud.setCurrentPageItemCount(data?.results.length ?? 0);
 
   return (
     <AppLayout>

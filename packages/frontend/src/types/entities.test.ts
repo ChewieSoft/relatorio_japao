@@ -9,10 +9,13 @@ import {
   collaboratorSchema,
   machineSchema,
   softwareSchema,
+  toCollaborator,
   toCollaboratorPayload,
   toCollaboratorFormData,
+  toMachine,
   toMachinePayload,
   toMachineFormData,
+  toSoftware,
   toSoftwarePayload,
   toSoftwareFormData,
 } from './entities'
@@ -206,6 +209,14 @@ describe('softwareSchema', () => {
     const result = softwareSchema.safeParse({ ...validSoftware, quantity: -1 })
     expect(result.success).toBe(false)
   })
+
+  it('rejeita typeLicence fora do enum', () => {
+    const result = softwareSchema.safeParse({ ...validSoftware, typeLicence: 'banana' })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.issues.some((i) => i.path.includes('typeLicence'))).toBe(true)
+    }
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -348,5 +359,141 @@ describe('toSoftwareFormData', () => {
     expect(form.lastPurchaseDate).toBe('2024-01-01')
     expect(form.expiresAt).toBe('2026-06-30')
     expect(form.onUse).toBe(8)
+  })
+
+  it('coerce type_licence desconhecido para string vazia', () => {
+    const form = toSoftwareFormData({
+      software_name: 'X',
+      key: 'k',
+      type_licence: 'banana',
+    })
+    expect(form.typeLicence).toBe('')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// List mappers — coerção segura de unknown
+// ---------------------------------------------------------------------------
+
+describe('toCollaborator (list mapper)', () => {
+  it('converte registro bem-formado para Collaborator', () => {
+    const raw = {
+      id: 1,
+      name: 'Carlos',
+      domain_user: 'ctanaka',
+      department: 'TI',
+      status: true,
+      fired: false,
+      has_server_access: true,
+      has_erp_access: false,
+      has_internet_access: true,
+      has_cellphone: false,
+      email: 'c@jrc.com',
+    }
+    const result = toCollaborator(raw)
+    expect(result.id).toBe(1)
+    expect(result.name).toBe('Carlos')
+    expect(result.domainUser).toBe('ctanaka')
+    expect(result.hasServerAccess).toBe(true)
+  })
+
+  it('usa fallbacks seguros quando campos são null/undefined', () => {
+    const result = toCollaborator({ id: 2 })
+    expect(result.name).toBe('')
+    expect(result.domainUser).toBe('')
+    expect(result.department).toBe('')
+    expect(result.status).toBe(false)
+    expect(result.fired).toBe(false)
+    expect(result.hasServerAccess).toBe(false)
+    expect(result.hasErpAccess).toBe(false)
+    expect(result.hasInternetAccess).toBe(false)
+    expect(result.hasCellphone).toBe(false)
+    expect(result.email).toBe('')
+  })
+
+  it('rejeita tipos inesperados usando fallback', () => {
+    const result = toCollaborator({
+      id: 'abc',
+      name: 42,
+      status: 'sim',
+      has_server_access: 1,
+    })
+    expect(result.id).toBe(0)
+    expect(result.name).toBe('')
+    expect(result.status).toBe(false)
+    expect(result.hasServerAccess).toBe(false)
+  })
+})
+
+describe('toMachine (list mapper)', () => {
+  it('converte registro bem-formado para Machine', () => {
+    const raw = {
+      id: 10,
+      hostname: 'JRC-TI-001',
+      model: 'Dell',
+      service_tag: 'ABCD',
+      ip: '10.0.0.1',
+      mac_address: 'AA:BB:CC:DD:EE:FF',
+      operational_system: 'Windows 11',
+      encrypted: true,
+      antivirus: false,
+      collaborator_id: 3,
+      collaborator_name: 'Maria',
+      machine_type: 'notebook',
+    }
+    const result = toMachine(raw)
+    expect(result.id).toBe(10)
+    expect(result.machineType).toBe('notebook')
+    expect(result.collaboratorId).toBe(3)
+    expect(result.encrypted).toBe(true)
+  })
+
+  it('coerce machine_type desconhecido para "desktop"', () => {
+    const result = toMachine({ id: 1, machine_type: 'server' })
+    expect(result.machineType).toBe('desktop')
+  })
+
+  it('preserva collaboratorId como null quando ausente', () => {
+    const result = toMachine({ id: 1 })
+    expect(result.collaboratorId).toBeNull()
+    expect(result.hostname).toBe('')
+    expect(result.encrypted).toBe(false)
+  })
+
+  it('preserva collaboratorId como null quando não-numérico', () => {
+    const result = toMachine({ id: 1, collaborator_id: 'X' })
+    expect(result.collaboratorId).toBeNull()
+  })
+})
+
+describe('toSoftware (list mapper)', () => {
+  it('converte registro bem-formado para Software', () => {
+    const raw = {
+      id: 5,
+      software_name: 'Office',
+      license_key: 'KEY-1',
+      license_type: 'subscription',
+      quantity: 10,
+      in_use: 7,
+      expires_at: '2026-12-31',
+    }
+    const result = toSoftware(raw)
+    expect(result.id).toBe(5)
+    expect(result.licenseType).toBe('subscription')
+    expect(result.inUse).toBe(7)
+    expect(result.expiresAt).toBe('2026-12-31')
+  })
+
+  it('coerce license_type desconhecido para "perpetual"', () => {
+    const result = toSoftware({ id: 1, license_type: 'trial' })
+    expect(result.licenseType).toBe('perpetual')
+  })
+
+  it('preserva expiresAt como null quando ausente', () => {
+    const result = toSoftware({ id: 1 })
+    expect(result.expiresAt).toBeNull()
+    expect(result.softwareName).toBe('')
+    expect(result.quantity).toBe(0)
+    expect(result.inUse).toBe(0)
   })
 })

@@ -18,7 +18,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, X, Plus, Pencil, Trash2, Monitor, Laptop } from "lucide-react";
-import { useRef } from "react";
 
 const PAGE_SIZE = 20;
 
@@ -31,22 +30,21 @@ const Machines = () => {
   const updateMutation = useUpdateMachine();
   const deleteMutation = useDeleteMachine();
 
-  // Ref atualizado a cada render para expor o tamanho da página atual ao hook
-  // sem depender da ordem de declaração das variáveis.
-  const pageItemCountRef = useRef(0);
-
   const crud = useCrudPage<MachineFormData>({
     createMutation,
     updateMutation,
     deleteMutation,
     entityLabel: "Máquina",
-    getCurrentPageItemCount: () => pageItemCountRef.current,
   });
 
   const { data, isLoading, isError, refetch } = useMachines(crud.page, crud.search);
   const { data: editData } = useMachine(crud.editingId);
-  pageItemCountRef.current = data?.results.length ?? 0;
   const totalPages = data ? Math.ceil(data.count / PAGE_SIZE) : 0;
+
+  // Sincroniza a quantidade de itens exibidos nesta página com o ref interno
+  // do hook para permitir que `handleDelete` volte de página ao remover o
+  // último item de uma página > 1.
+  crud.setCurrentPageItemCount(data?.results.length ?? 0);
 
   return (
     <AppLayout>

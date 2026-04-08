@@ -9,7 +9,7 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tansta
 import api from '../api/client'
 import type { PaginatedResponse } from '../types/api'
 import type { Software, SoftwareFormData } from '../types/entities'
-import { toSoftwarePayload, toSoftwareFormData } from '../types/entities'
+import { toSoftware, toSoftwarePayload, toSoftwareFormData } from '../types/entities'
 
 /**
  * Lista software paginado com busca opcional.
@@ -29,15 +29,7 @@ export function useSoftware(page = 1, search = '') {
         count: res.data.count,
         next: res.data.next,
         previous: res.data.previous,
-        results: res.data.results.map((s: Record<string, unknown>) => ({
-          id: s.id,
-          softwareName: s.software_name,
-          licenseKey: s.license_key,
-          licenseType: s.license_type,
-          quantity: s.quantity,
-          inUse: s.in_use,
-          expiresAt: s.expires_at,
-        })),
+        results: res.data.results.map((s: Record<string, unknown>) => toSoftware(s)),
       }
     },
     placeholderData: keepPreviousData,

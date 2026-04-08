@@ -9,7 +9,7 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tansta
 import api from '../api/client'
 import type { PaginatedResponse } from '../types/api'
 import type { Machine, MachineFormData } from '../types/entities'
-import { toMachinePayload, toMachineFormData } from '../types/entities'
+import { toMachine, toMachinePayload, toMachineFormData } from '../types/entities'
 
 /**
  * Lista máquinas paginadas com busca opcional.
@@ -29,20 +29,7 @@ export function useMachines(page = 1, search = '') {
         count: res.data.count,
         next: res.data.next,
         previous: res.data.previous,
-        results: res.data.results.map((m: Record<string, unknown>) => ({
-          id: m.id,
-          hostname: m.hostname,
-          model: m.model,
-          serviceTag: m.service_tag,
-          ip: m.ip,
-          macAddress: m.mac_address,
-          operationalSystem: m.operational_system,
-          encrypted: m.encrypted,
-          antivirus: m.antivirus,
-          collaboratorId: m.collaborator_id,
-          collaboratorName: m.collaborator_name,
-          machineType: m.machine_type,
-        })),
+        results: res.data.results.map((m: Record<string, unknown>) => toMachine(m)),
       }
     },
     placeholderData: keepPreviousData,

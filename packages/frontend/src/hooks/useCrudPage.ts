@@ -8,7 +8,7 @@
  * @param options - Configuração com mutations, labels e callbacks.
  * @returns Estado e handlers prontos para uso na página.
  */
-import { useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import { toast } from "sonner"
 import { isAxiosError } from "axios"
 import type { UseMutationResult } from "@tanstack/react-query"
@@ -22,15 +22,6 @@ interface CrudPageOptions<TFormData, TCreateResult, TUpdateResult> {
   deleteMutation: UseMutationResult<void, Error, number>
   /** Nome da entidade para mensagens de toast (ex: "Colaborador"). */
   entityLabel: string
-  /**
-   * Getter para a quantidade de itens exibidos atualmente na página corrente.
-   *
-   * Usado para ajustar a paginação após exclusão: se o usuário excluir
-   * o último item de uma página > 1, o hook volta para a página anterior
-   * automaticamente, evitando que a UI mostre uma página vazia fora de alcance.
-   * Passado como função para capturar o valor mais recente no momento do delete.
-   */
-  getCurrentPageItemCount?: () => number
 }
 
 /** Retorno do hook useCrudPage com estado e handlers. */
@@ -51,12 +42,31 @@ export interface CrudPageState<TFormData> {
   handleSearchChange: (value: string) => void
   handleFormClose: (open: boolean) => void
   setDeletingEntity: (entity: { id: number; name: string } | null) => void
+  /**
+   * Informa ao hook a quantidade de itens exibidos na página corrente.
+   *
+   * Deve ser chamado pela página a cada render após obter `data.results`.
+   * O valor é armazenado em um ref interno e lido por `handleDelete` para
+   * decidir se deve voltar uma página ao excluir o último item de uma
+   * página > 1. Esta função é estável (identidade preservada entre renders)
+   * e idempotente — pode ser chamada durante render sem efeitos colaterais
+   * em outros hooks.
+   */
+  setCurrentPageItemCount: (count: number) => void
 }
 
 export function useCrudPage<TFormData, TCreateResult = unknown, TUpdateResult = unknown>(
   options: CrudPageOptions<TFormData, TCreateResult, TUpdateResult>
 ): CrudPageState<TFormData> {
-  const { createMutation, updateMutation, deleteMutation, entityLabel, getCurrentPageItemCount } = options
+  const { createMutation, updateMutation, deleteMutation, entityLabel } = options
+
+  // Ref que guarda o número de itens exibidos na página corrente. A página
+  // chamadora atualiza o valor via `setCurrentPageItemCount` a cada render.
+  // `handleDelete` lê o valor mais recente para decidir se volta de página.
+  const currentPageItemCountRef = useRef(0)
+  const setCurrentPageItemCount = useCallback((count: number) => {
+    currentPageItemCountRef.current = count
+  }, [])
 
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
@@ -139,7 +149,7 @@ export function useCrudPage<TFormData, TCreateResult = unknown, TUpdateResult = 
     deleteMutation.mutate(deletingEntity.id, {
       onSuccess: () => {
         setDeletingEntity(null)
-        if (page > 1 && getCurrentPageItemCount?.() === 1) {
+        if (page > 1 && currentPageItemCountRef.current === 1) {
           setPage(page - 1)
         }
         toast.success(`${entityLabel} excluído(a) com sucesso!`)
@@ -185,5 +195,6 @@ export function useCrudPage<TFormData, TCreateResult = unknown, TUpdateResult = 
     handleSearchChange,
     handleFormClose,
     setDeletingEntity,
+    setCurrentPageItemCount,
   }
 }

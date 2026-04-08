@@ -131,4 +131,40 @@ describe('useCrudPage', () => {
     act(() => result.current.handleFormClose(true))
     expect(result.current.formOpen).toBe(true)
   })
+
+  it('volta uma página ao excluir o último item de uma página > 1', () => {
+    // Simula mutation que executa onSuccess sincronamente
+    deleteMutation.mutate = vi.fn((_id, opts: { onSuccess?: () => void }) => {
+      opts.onSuccess?.()
+    }) as never
+    const { result } = renderCrud()
+    act(() => result.current.setPage(3))
+    act(() => result.current.setCurrentPageItemCount(1))
+    act(() => result.current.setDeletingEntity({ id: 9, name: 'Último' }))
+    act(() => result.current.handleDelete())
+    expect(result.current.page).toBe(2)
+  })
+
+  it('mantém a página atual ao excluir quando ainda há outros itens', () => {
+    deleteMutation.mutate = vi.fn((_id, opts: { onSuccess?: () => void }) => {
+      opts.onSuccess?.()
+    }) as never
+    const { result } = renderCrud()
+    act(() => result.current.setPage(3))
+    act(() => result.current.setCurrentPageItemCount(5))
+    act(() => result.current.setDeletingEntity({ id: 9, name: 'Um dos muitos' }))
+    act(() => result.current.handleDelete())
+    expect(result.current.page).toBe(3)
+  })
+
+  it('não volta da página 1 mesmo sendo o último item', () => {
+    deleteMutation.mutate = vi.fn((_id, opts: { onSuccess?: () => void }) => {
+      opts.onSuccess?.()
+    }) as never
+    const { result } = renderCrud()
+    act(() => result.current.setCurrentPageItemCount(1))
+    act(() => result.current.setDeletingEntity({ id: 1, name: 'Único' }))
+    act(() => result.current.handleDelete())
+    expect(result.current.page).toBe(1)
+  })
 })

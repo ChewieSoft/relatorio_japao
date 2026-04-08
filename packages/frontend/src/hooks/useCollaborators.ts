@@ -9,7 +9,7 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tansta
 import api from '../api/client'
 import type { PaginatedResponse } from '../types/api'
 import type { Collaborator, CollaboratorFormData } from '../types/entities'
-import { toCollaboratorPayload, toCollaboratorFormData } from '../types/entities'
+import { toCollaborator, toCollaboratorPayload, toCollaboratorFormData } from '../types/entities'
 
 /**
  * Lista colaboradores paginados com busca opcional.
@@ -29,19 +29,7 @@ export function useCollaborators(page = 1, search = '') {
         count: res.data.count,
         next: res.data.next,
         previous: res.data.previous,
-        results: res.data.results.map((c: Record<string, unknown>) => ({
-          id: c.id,
-          name: c.name,
-          domainUser: c.domain_user,
-          department: c.department,
-          status: c.status,
-          fired: c.fired,
-          hasServerAccess: c.has_server_access,
-          hasErpAccess: c.has_erp_access,
-          hasInternetAccess: c.has_internet_access,
-          hasCellphone: c.has_cellphone,
-          email: c.email,
-        })),
+        results: res.data.results.map((c: Record<string, unknown>) => toCollaborator(c)),
       }
     },
     placeholderData: keepPreviousData,
