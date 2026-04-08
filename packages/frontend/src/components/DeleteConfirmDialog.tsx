@@ -43,7 +43,7 @@ const DeleteConfirmDialog = ({ open, onConfirm, onCancel, entityName, isLoading 
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
-        <AlertDialogCancel onClick={onCancel} disabled={isLoading}>Cancelar</AlertDialogCancel>
+        <AlertDialogCancel disabled={isLoading}>Cancelar</AlertDialogCancel>
         <AlertDialogAction
           onClick={onConfirm}
           disabled={isLoading}

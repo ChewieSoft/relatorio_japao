@@ -101,8 +101,9 @@ export function useUpdateCollaborator() {
       const res = await api.put(`/collaborators/${id}/`, toCollaboratorPayload(data))
       return res.data
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['collaborators'] })
+      queryClient.removeQueries({ queryKey: ['collaborators', 'detail', variables.id] })
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
     },
   })
@@ -119,8 +120,9 @@ export function useDeleteCollaborator() {
     mutationFn: async (id: number) => {
       await api.delete(`/collaborators/${id}/`)
     },
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: ['collaborators'] })
+      queryClient.removeQueries({ queryKey: ['collaborators', 'detail', id] })
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
     },
   })

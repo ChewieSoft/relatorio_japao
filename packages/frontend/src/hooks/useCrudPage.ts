@@ -22,6 +22,15 @@ interface CrudPageOptions<TFormData, TCreateResult, TUpdateResult> {
   deleteMutation: UseMutationResult<void, Error, number>
   /** Nome da entidade para mensagens de toast (ex: "Colaborador"). */
   entityLabel: string
+  /**
+   * Getter para a quantidade de itens exibidos atualmente na página corrente.
+   *
+   * Usado para ajustar a paginação após exclusão: se o usuário excluir
+   * o último item de uma página > 1, o hook volta para a página anterior
+   * automaticamente, evitando que a UI mostre uma página vazia fora de alcance.
+   * Passado como função para capturar o valor mais recente no momento do delete.
+   */
+  getCurrentPageItemCount?: () => number
 }
 
 /** Retorno do hook useCrudPage com estado e handlers. */
@@ -47,7 +56,7 @@ export interface CrudPageState<TFormData> {
 export function useCrudPage<TFormData, TCreateResult = unknown, TUpdateResult = unknown>(
   options: CrudPageOptions<TFormData, TCreateResult, TUpdateResult>
 ): CrudPageState<TFormData> {
-  const { createMutation, updateMutation, deleteMutation, entityLabel } = options
+  const { createMutation, updateMutation, deleteMutation, entityLabel, getCurrentPageItemCount } = options
 
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
@@ -72,8 +81,35 @@ export function useCrudPage<TFormData, TCreateResult = unknown, TUpdateResult = 
     if (isAxiosError<Record<string, string[]>>(error) && error.response?.status === 400 && error.response.data) {
       setServerErrors(error.response.data)
     } else {
+      console.error(error)
       toast.error(`Erro ao ${action} ${entityLabel.toLowerCase()}.`)
     }
+  }
+
+  /**
+   * Extrai mensagem legível de erro da API para exibir em toast.
+   *
+   * Tenta, nesta ordem: campo `detail` (DRF APIException),
+   * `non_field_errors` (validação DRF) e primeira mensagem de campo.
+   * Retorna `null` se nenhuma mensagem utilizável for encontrada.
+   *
+   * @param error - Erro capturado pelo `onError` da mutation.
+   * @returns Mensagem em PT-BR vinda do backend ou `null`.
+   */
+  const extractApiErrorMessage = (error: Error): string | null => {
+    if (!isAxiosError<Record<string, unknown>>(error) || !error.response?.data) {
+      return null
+    }
+    const data = error.response.data
+    if (typeof data.detail === 'string') return data.detail
+    if (Array.isArray(data.non_field_errors) && typeof data.non_field_errors[0] === 'string') {
+      return data.non_field_errors[0]
+    }
+    for (const value of Object.values(data)) {
+      if (Array.isArray(value) && typeof value[0] === 'string') return value[0]
+      if (typeof value === 'string') return value
+    }
+    return null
   }
 
   const handleSave = (formData: TFormData) => {
@@ -103,10 +139,19 @@ export function useCrudPage<TFormData, TCreateResult = unknown, TUpdateResult = 
     deleteMutation.mutate(deletingEntity.id, {
       onSuccess: () => {
         setDeletingEntity(null)
+        if (page > 1 && getCurrentPageItemCount?.() === 1) {
+          setPage(page - 1)
+        }
         toast.success(`${entityLabel} excluído(a) com sucesso!`)
       },
-      onError: () => {
-        toast.error(`Erro ao excluir ${entityLabel.toLowerCase()}.`)
+      onError: (error) => {
+        console.error(error)
+        const apiMessage = extractApiErrorMessage(error)
+        const isConflict = isAxiosError(error) && error.response?.status === 409
+        const fallback = isConflict
+          ? `Não é possível excluir ${entityLabel.toLowerCase()}: registro em uso.`
+          : `Erro ao excluir ${entityLabel.toLowerCase()}.`
+        toast.error(apiMessage ?? fallback)
       },
     })
   }

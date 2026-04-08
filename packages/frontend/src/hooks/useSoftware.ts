@@ -92,8 +92,9 @@ export function useUpdateSoftware() {
       const res = await api.put(`/software/${id}/`, toSoftwarePayload(data))
       return res.data
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['software'] })
+      queryClient.removeQueries({ queryKey: ['software', 'detail', variables.id] })
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
     },
   })
@@ -110,8 +111,9 @@ export function useDeleteSoftware() {
     mutationFn: async (id: number) => {
       await api.delete(`/software/${id}/`)
     },
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: ['software'] })
+      queryClient.removeQueries({ queryKey: ['software', 'detail', id] })
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
     },
   })

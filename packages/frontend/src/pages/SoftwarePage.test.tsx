@@ -8,14 +8,17 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { setupServer } from 'msw/node'
-import { softwareHandlers } from '@/mocks/handlers/software'
+import { softwareHandlers, resetSoftwareState } from '@/mocks/handlers/software'
 import { createPageWrapper } from '@/test/page-wrapper'
 import SoftwarePage from './SoftwarePage'
 
 const server = setupServer(...softwareHandlers)
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }))
-afterEach(() => server.resetHandlers())
+afterEach(() => {
+  server.resetHandlers()
+  resetSoftwareState()
+})
 afterAll(() => server.close())
 
 describe('SoftwarePage', () => {

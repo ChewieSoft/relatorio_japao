@@ -16,7 +16,20 @@ let data = [...collaborators]
 let nextId = data.length + 1
 
 /** IDs marcados como soft-deleted (simula deleted_at != null). */
-const deletedIds = new Set<number>()
+let deletedIds = new Set<number>()
+
+/**
+ * Reseta o estado em memória dos handlers de colaboradores.
+ *
+ * Deve ser chamada em `afterEach` dos testes que fazem POST/PUT/DELETE
+ * para evitar vazamento de estado entre casos de teste, já que
+ * `server.resetHandlers()` não limpa o estado mutável de nível de módulo.
+ */
+export function resetCollaboratorsState() {
+  data = [...collaborators]
+  nextId = data.length + 1
+  deletedIds = new Set<number>()
+}
 
 /** Retorna registros ativos (não soft-deleted). */
 function activeRecords() {

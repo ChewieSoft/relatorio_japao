@@ -8,14 +8,17 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { setupServer } from 'msw/node'
-import { collaboratorsHandlers } from '@/mocks/handlers/collaborators'
+import { collaboratorsHandlers, resetCollaboratorsState } from '@/mocks/handlers/collaborators'
 import { createPageWrapper } from '@/test/page-wrapper'
 import Collaborators from './Collaborators'
 
 const server = setupServer(...collaboratorsHandlers)
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }))
-afterEach(() => server.resetHandlers())
+afterEach(() => {
+  server.resetHandlers()
+  resetCollaboratorsState()
+})
 afterAll(() => server.close())
 
 describe('Collaborators Page', () => {

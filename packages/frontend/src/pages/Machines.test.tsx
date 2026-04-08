@@ -8,14 +8,17 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { setupServer } from 'msw/node'
-import { machinesHandlers } from '@/mocks/handlers/machines'
+import { machinesHandlers, resetMachinesState } from '@/mocks/handlers/machines'
 import { createPageWrapper } from '@/test/page-wrapper'
 import Machines from './Machines'
 
 const server = setupServer(...machinesHandlers)
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }))
-afterEach(() => server.resetHandlers())
+afterEach(() => {
+  server.resetHandlers()
+  resetMachinesState()
+})
 afterAll(() => server.close())
 
 describe('Machines Page', () => {
