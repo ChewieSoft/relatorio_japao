@@ -28,7 +28,7 @@ relatorio_japao/
 ├── .gitignore
 ├── README.md
 │
-├── backend/                        (Django REST API)
+├── packages/backend/               (Django REST API)
 │   ├── Dockerfile
 │   ├── requirements.txt
 │   ├── manage.py
@@ -163,7 +163,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   backend:
-    build: ./backend
+    build: ./packages/backend
     command: python manage.py runserver 0.0.0.0:8000
     ports:
       - "8000:8000"
@@ -476,7 +476,7 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: ./packages/backend
       dockerfile: Dockerfile
     command: gunicorn config.wsgi:application --bind 0.0.0.0:8000
     environment:

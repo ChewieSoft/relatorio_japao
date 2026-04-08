@@ -433,15 +433,15 @@ relatorio_japao/
 │   ├── BACKEND.md
 │   ├── FRONTEND.md
 │   └── INFRA.md
-├── backend/
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   ├── manage.py
-│   ├── config/          (settings, urls, wsgi, asgi)
-│   ├── accounts/        (auth JWT: controllers, services)
-│   ├── core/            (14 modelos + controllers/services/repositories)
-│   └── reports/         (19 relatorios: controllers/services/repositories/exporters)
 └── packages/
+    ├── backend/
+    │   ├── Dockerfile
+    │   ├── requirements.txt
+    │   ├── manage.py
+    │   ├── config/          (settings, urls, wsgi, asgi)
+    │   ├── accounts/        (auth JWT: controllers, services)
+    │   ├── core/            (14 modelos + controllers/services/repositories)
+    │   └── reports/         (19 relatorios: controllers/services/repositories/exporters)
     └── frontend/
         ├── vite.config.ts
         ├── package.json
@@ -464,7 +464,7 @@ relatorio_japao/
 docker-compose up --build
 
 # Backend (sem Docker)
-cd backend
+cd packages/backend
 python -m venv venv && source venv/bin/activate  # Linux/Mac
 pip install -r requirements.txt
 python manage.py migrate
@@ -477,7 +477,7 @@ npm install
 npm run dev
 
 # Testes
-cd backend && pytest
+cd packages/backend && pytest
 cd packages/frontend && npm run test
 
 # Banco

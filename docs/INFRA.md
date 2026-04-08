@@ -68,12 +68,12 @@ services:
       retries: 5
 
   backend:
-    build: ./backend
+    build: ./packages/backend
     command: python manage.py runserver 0.0.0.0:8000
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app
+      - ./packages/backend:/app
     depends_on:
       db:
         condition: service_healthy
@@ -115,7 +115,7 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: ./packages/backend
       dockerfile: Dockerfile
     command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3
     depends_on:
@@ -142,7 +142,7 @@ volumes:
 
 ## Dockerfiles
 
-### Backend (backend/Dockerfile)
+### Backend (packages/backend/Dockerfile)
 
 ```dockerfile
 FROM python:3.11-slim
@@ -291,7 +291,7 @@ docker-compose exec backend python manage.py showmigrations
 
 # Fixtures (dados de teste)
 docker-compose exec backend python manage.py loaddata fixtures/sample_data.json
-docker-compose exec backend python manage.py dumpdata core --indent 2 > backend/fixtures/sample_data.json
+docker-compose exec backend python manage.py dumpdata core --indent 2 > packages/backend/fixtures/sample_data.json
 
 # Shell Django
 docker-compose exec backend python manage.py shell

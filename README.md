@@ -37,12 +37,12 @@ relatorio_japao/
 │   ├── BACKEND.md             # Referência Django/DRF
 │   ├── FRONTEND.md            # Referência React SPA
 │   └── INFRA.md               # Docker e deploy
-├── backend/
-│   ├── config/                # Settings, URLs, WSGI
-│   ├── accounts/              # Auth JWT
-│   ├── core/                  # 14 modelos + Controllers/Services/Repositories
-│   └── reports/               # relatórios + Controllers/Services/Repositories/Exporters
 └── packages/
+    ├── backend/
+    │   ├── config/                # Settings, URLs, WSGI
+    │   ├── accounts/              # Auth JWT
+    │   ├── core/                  # 14 modelos + Controllers/Services/Repositories
+    │   └── reports/               # relatórios + Controllers/Services/Repositories/Exporters
     └── frontend/
         └── src/
             ├── api/               # Cliente Axios + JWT
@@ -103,7 +103,7 @@ O entrypoint do backend executa automaticamente:
 **Backend:**
 
 ```bash
-cd backend
+cd packages/backend
 python -m venv venv && source venv/bin/activate  # Linux/Mac
 pip install -r requirements.txt
 python manage.py migrate
