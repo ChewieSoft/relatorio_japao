@@ -572,7 +572,7 @@ Testes sao organizados por camada (repository, service, controller) em cada app.
 
 ```bash
 # Rodar todos os testes
-cd backend && pytest
+cd packages/backend && pytest
 
 # Testes por camada
 pytest core/tests/test_repositories.py

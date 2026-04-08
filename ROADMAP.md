@@ -1,18 +1,56 @@
 # Roadmap — Relatório JRC Brasil
 
-Estado atual do projeto, fases de implementação e instruções de uso.
+Estado atual do projeto, fases de implementação e próximos passos.
 
 ## Estado Atual
 
-O **frontend React** está totalmente implementado e funcional usando **MSW (Mock Service Worker)** para simular a API Django. Todas as páginas, formulários e fluxos de navegação estão operacionais com dados mockados.
+Três specs já foram concluídas e mescladas na `main`:
 
-O **backend Django** ainda **não foi iniciado** — não há modelos, migrations, controllers, services ou repositories implementados.
+- **001 — Align Lovable Frontend**: frontend React alinhado à arquitetura (Axios + React Query + JWT + MSW).
+- **002 — Django Backend API**: backend Django REST completo (14 modelos, JWT, 12 CRUDs, dashboard, relatórios).
+- **003 — Frontend CRUD for Main Entities**: CRUD frontend com formulários para Colaboradores, Máquinas e Software.
 
-**Resumo:** é possível navegar por toda a aplicação e visualizar listagens com dados simulados em memória (MSW). Formulários de criação, edição e exclusão ainda não foram implementados. Nenhum dado persiste entre recarregamentos da página.
+O sistema roda ponta-a-ponta via Docker Compose com autenticação, CRUD completo para as entidades principais, soft delete, busca, paginação e testes automatizados em ambas as camadas.
 
-## Como Usar o que Temos
+## O que está pronto
 
-### Rodar o frontend
+### Backend Django (`packages/backend/`)
+
+- 14 modelos herdando de `BaseModel` com soft delete e `SoftDeleteManager`.
+- Autenticação JWT (`/api/auth/login`, `refresh`, `logout`, `me`, `register`) com blacklist de refresh.
+- 12 endpoints CRUD (`collaborators`, `machines`, `software`, `emails`, `cellphones`, `wifi`, `antivirus`, `servers`, `server-access`, `erp-access`, `data-destroyed`, `pen-drives`) com paginação (20/página), filtros e busca.
+- Endpoint de dashboard (`/api/dashboard/stats/`) com agregações de colaboradores, máquinas, software e máquinas sem criptografia.
+- Listagem dos 19 relatórios e marcação de geração.
+- Django Admin configurado para todos os modelos.
+- Migrations e seed automáticos via `entrypoint.sh`.
+
+### Frontend React (`packages/frontend/`)
+
+- 6 páginas: Login, Dashboard, Colaboradores, Máquinas, Software, Relatórios.
+- CRUD completo com formulários (Dialog/Sheet), validação Zod + React Hook Form.
+- Busca server-side com debounce, paginação, confirmação de exclusão, toasts e erros server-side.
+- MSW para desenvolvimento desconectado do backend.
+- 106 testes Vitest (hooks, componentes, páginas de integração) passando.
+
+### Infraestrutura
+
+- `docker-compose.yml` com 3 serviços: `db` (Postgres), `backend` (Django), `frontend` (Vite).
+- Auto-setup do banco, superuser de dev e seed via entrypoint.
+- Credenciais de dev e setup documentados no README.
+
+## Como Usar
+
+### Opção 1 — Stack completa via Docker
+
+```bash
+docker-compose up --build
+```
+
+- Frontend: `http://localhost:8080`
+- API: `http://localhost:8000/api/`
+- Admin Django: `http://localhost:8000/admin/`
+
+### Opção 2 — Frontend isolado (MSW)
 
 ```bash
 cd packages/frontend
@@ -20,44 +58,49 @@ npm install
 npm run dev
 ```
 
-Acesse: `http://localhost:8080`
+Acesse `http://localhost:8080`. Dados são servidos pelo MSW em memória.
 
-### Credenciais mock
+### Credenciais de dev
 
-| Campo | Valor |
-|-------|-------|
-| Usuário | `admin` |
-| Senha | `admin123` |
+| Campo   | Valor      |
+|---------|------------|
+| Usuário | `admin`    |
+| Senha   | `admin123` |
 
-### Páginas disponíveis
+## Páginas e Funcionalidades
 
-| Página | Rota | O que faz |
-|--------|------|-----------|
-| Login | `/login` | Autenticação simulada via MSW; redireciona ao Dashboard |
-| Dashboard | `/dashboard` | Exibe KPIs (colaboradores, máquinas, software, relatórios pendentes) e alertas de segurança |
-| Colaboradores | `/collaborators` | Listagem paginada com status e permissões (somente leitura) |
-| Máquinas | `/machines` | Listagem paginada com tipo, criptografia e antivírus (somente leitura) |
-| Software | `/software` | Listagem paginada com tipo de licença e uso (somente leitura) |
-| Relatórios | `/reports` | Lista os 19 relatórios agrupados por categoria, com geração e download PDF/Excel |
+| Página        | Rota             | CRUD                            |
+|---------------|------------------|---------------------------------|
+| Login         | `/login`         | Autenticação JWT                |
+| Dashboard     | `/dashboard`     | KPIs agregados e alertas        |
+| Colaboradores | `/collaborators` | Create / Read / Update / Delete (soft) + busca |
+| Máquinas      | `/machines`      | Create / Read / Update / Delete (soft) + busca |
+| Software      | `/software`      | Create / Read / Update / Delete (soft) + busca |
+| Relatórios    | `/reports`       | Listagem e marcação de geração  |
 
 ## Fases do Projeto
 
-| # | Fase | Status | Observações |
-|---|------|--------|-------------|
-| 1 | Setup do Projeto | Parcial | Frontend configurado (Vite + React + Tailwind + shadcn/ui). Backend não iniciado (sem Django project/apps). |
-| 2 | Modelos Django | Não iniciada | 14 modelos + BaseModel com soft delete ainda não implementados. |
-| 3 | Autenticação JWT | Parcial | Frontend implementado (AuthContext, ProtectedRoute, interceptors Axios). Backend não iniciado (sem simplejwt). |
-| 4 | CRUD API REST | Parcial | Frontend implementado com listagem paginada + MSW handlers (somente leitura — faltam formulários de criação, edição e exclusão). Backend não iniciado (sem controllers/services/repositories). |
-| 5 | 19 Relatórios | Parcial | Frontend implementado (página de listagem + visualização). Backend não iniciado (sem exporters PDF/XLSX). |
-| 6 | Integração Frontend | ~60% concluída | Listagem e visualização implementadas com MSW. Faltam formulários de criação/edição/exclusão e conexão à API real. |
-| 7 | Finalização | Não iniciada | Docker Compose, testes E2E, deploy, documentação final. |
+| # | Fase                 | Status      | Observações |
+|---|----------------------|-------------|-------------|
+| 1 | Setup do Projeto     | ✅ Concluída | Frontend (Vite + React + Tailwind + shadcn/ui) e backend (Django 4.2 + DRF + Postgres) configurados. |
+| 2 | Modelos Django       | ✅ Concluída | 14 modelos + `BaseModel` com soft delete, migrations e seed (spec 002). |
+| 3 | Autenticação JWT     | ✅ Concluída | Backend com `simplejwt` e blacklist; frontend com `AuthContext`, `ProtectedRoute` e interceptor Axios (specs 001 + 002). |
+| 4 | CRUD API REST        | ✅ Concluída | 12 endpoints no backend + formulários completos no frontend para as 3 entidades principais (specs 002 + 003). |
+| 5 | 19 Relatórios        | ⚠️ Parcial   | Listagem e marcação de geração prontas; **falta exportação PDF/XLSX**. |
+| 6 | Integração Frontend  | ✅ Concluída | Axios apontando para a API real; MSW mantido como fallback de desenvolvimento (specs 001 + 003). |
+| 7 | Finalização          | ⚠️ Parcial   | Docker Compose pronto; faltam testes E2E, pipeline de produção e documentação final. |
+
+## Specs Concluídas
+
+- [`specs/001-align-lovable-frontend`](specs/001-align-lovable-frontend) — Alinhamento do frontend Lovable com a arquitetura do projeto (Axios, React Query, JWT, MSW).
+- [`specs/002-django-backend-api`](specs/002-django-backend-api) — Backend Django REST completo (14 modelos, JWT, 12 CRUDs, dashboard, relatórios).
+- [`specs/003-frontend-crud-entities`](specs/003-frontend-crud-entities) — CRUD frontend para Colaboradores, Máquinas e Software.
 
 ## Próximos Passos
 
-1. **Criar o projeto Django** (Fase 1 backend) — `django-admin startproject config`, criar apps `accounts`, `core`, `reports`
-2. **Implementar modelos** (Fase 2) — `BaseModel` com soft delete, 14 modelos do domínio, migrations
-3. **Implementar autenticação JWT** (Fase 3) — `djangorestframework-simplejwt`, endpoints de login/register/refresh/logout
-4. **Implementar CRUD REST** (Fase 4) — Controllers, Services, Repositories para as 14 entidades
-5. **Implementar relatórios** (Fase 5) — Services de agregação, exportação PDF/XLSX
-6. **Conectar frontend à API real** (Fase 6) — Remover MSW, apontar Axios para `localhost:8000`
-7. **Finalizar** (Fase 7) — Docker Compose, testes, deploy
+1. **Exportação de Relatórios (PDF/XLSX)** — implementar os 19 relatórios de auditoria no backend (ReportLab + openpyxl) e o download no frontend.
+2. **CRUD de entidades dependentes** — Email, Cellphone, Wifi, AntiVirus, Server, ServerAccess, ServerErpAccess, DataDestroyed, PenDrive (hoje acessíveis apenas via Django Admin).
+3. **RBAC / Permissões** — controle de acesso baseado em perfis (admin vs. usuário comum).
+4. **Testes E2E** — Playwright ou Cypress cobrindo fluxos críticos (login, CRUD, geração de relatório).
+5. **Pipeline CI/CD de produção** — build, testes e deploy (a CD Staging já existe).
+6. **Auditoria** — log de quem alterou o quê e quando para compliance.

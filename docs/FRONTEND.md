@@ -24,9 +24,9 @@
 | tailwind-merge | ^2.6.0 | Merge seguro de classes Tailwind |
 | lucide-react | ^0.462.0 | Icones SVG |
 | @fontsource/ibm-plex-sans | ^5.2.8 | Fonte IBM Plex Sans |
-| react-hook-form | ^7.61.1 | Gerenciamento de formularios (uso futuro) |
-| @hookform/resolvers | ^3.10.0 | Resolvers de validacao para react-hook-form |
-| zod | ^3.25.76 | Validacao de schemas (uso futuro) |
+| react-hook-form | ^7.61.1 | Gerenciamento de formularios CRUD (create/edit) |
+| @hookform/resolvers | ^3.10.0 | Resolver zod para react-hook-form |
+| zod | ^3.25.76 | Validacao client-side com campos condicionais |
 | recharts | ^2.15.4 | Graficos e visualizacoes |
 | sonner | ^1.7.4 | Notificacoes toast (alternativo) |
 | date-fns | ^3.6.0 | Manipulacao de datas |
@@ -52,9 +52,10 @@ packages/frontend/src/
 │   ├── api.ts            (PaginatedResponse, TokenPair)
 │   └── entities.ts       (Collaborator, Machine, Software, Report, User, DashboardStats)
 ├── hooks/
-│   ├── useCollaborators.ts
-│   ├── useMachines.ts
-│   ├── useSoftware.ts
+│   ├── useCrudPage.ts      (hook genérico de orquestração CRUD para páginas)
+│   ├── useCollaborators.ts (list + detail + create/update/delete mutations)
+│   ├── useMachines.ts      (list + detail + create/update/delete mutations)
+│   ├── useSoftware.ts      (list + detail + create/update/delete mutations)
 │   ├── useReports.ts
 │   ├── useDashboardStats.ts
 │   ├── use-mobile.tsx
@@ -77,6 +78,11 @@ packages/frontend/src/
 │   ├── NavLink.tsx
 │   ├── PageHeader.tsx
 │   ├── StatusBadge.tsx
+│   ├── SearchInput.tsx         (campo de busca reutilizável com debounce 400ms)
+│   ├── DeleteConfirmDialog.tsx (diálogo de confirmação de exclusão, soft delete)
+│   ├── CollaboratorForm.tsx    (formulário Dialog create/edit com zod)
+│   ├── MachineForm.tsx         (formulário Sheet create/edit com zod, 18 campos)
+│   ├── SoftwareForm.tsx        (formulário Dialog create/edit com zod)
 │   └── ui/              (60+ componentes shadcn/ui)
 ├── pages/
 │   ├── Login.tsx
@@ -345,6 +351,12 @@ export interface TokenPair {
 
 Todas as interfaces usam **camelCase** no frontend. A transformacao de `snake_case` (API) para `camelCase` acontece nos hooks de React Query.
 
+Alem das interfaces de listagem, o arquivo contem:
+
+- **FormData types** — interfaces camelCase para react-hook-form (`CollaboratorFormData`, `MachineFormData`, `SoftwareFormData`)
+- **Zod schemas** — validacao client-side com campos condicionais (`collaboratorSchema`, `machineSchema`, `softwareSchema`)
+- **Mapping helpers** — funcoes de conversao camelCase↔snake_case (`toCollaboratorPayload`/`toCollaboratorFormData`, etc.) com coerce segura via helpers `str()`, `bool()`, `num()`
+
 ```typescript
 /** Funcionário da JRC Brasil com dados de domínio e permissões. */
 export interface Collaborator {
@@ -442,48 +454,33 @@ const queryClient = new QueryClient({
 
 Todos os hooks de leitura usam `useQuery` e transformam campos `snake_case` da API Django para `camelCase` do frontend TypeScript. Essa transformacao acontece exclusivamente no `queryFn`.
 
-```typescript
-// hooks/useCollaborators.ts
-import { useQuery } from '@tanstack/react-query'
-import api from '../api/client'
-import type { PaginatedResponse } from '../types/api'
-import type { Collaborator } from '../types/entities'
+Cada entidade (Collaborators, Machines, Software) expoe 5 hooks:
 
-/**
- * Hook React Query para listar colaboradores paginados.
- *
- * Busca dados de GET /api/collaborators/?page={page} e transforma
- * campos snake_case da API para camelCase do frontend.
- *
- * @param page - Número da página (default: 1).
- * @returns Resultado da query com dados paginados de colaboradores.
- */
-export function useCollaborators(page = 1) {
-  return useQuery({
-    queryKey: ['collaborators', page],
-    queryFn: async (): Promise<PaginatedResponse<Collaborator>> => {
-      const res = await api.get(`/collaborators/?page=${page}`)
-      return {
-        count: res.data.count,
-        next: res.data.next,
-        previous: res.data.previous,
-        results: res.data.results.map((c: Record<string, unknown>) => ({
-          id: c.id,
-          name: c.name,
-          domainUser: c.domain_user,
-          department: c.department,
-          status: c.status,
-          fired: c.fired,
-          hasServerAccess: c.has_server_access,
-          hasErpAccess: c.has_erp_access,
-          hasInternetAccess: c.has_internet_access,
-          hasCellphone: c.has_cellphone,
-          email: c.email,
-        })),
-      }
-    },
-  })
-}
+| Hook | Tipo | Descricao |
+|------|------|-----------|
+| `useCollaborators(page, search)` | `useQuery` | Lista paginada com busca server-side |
+| `useCollaborator(id)` | `useQuery` | Detalhe para edicao (enabled quando id != null) |
+| `useCreateCollaborator()` | `useMutation` | POST com conversao camelCase→snake_case |
+| `useUpdateCollaborator()` | `useMutation` | PUT com conversao camelCase→snake_case |
+| `useDeleteCollaborator()` | `useMutation` | DELETE (soft delete no backend) |
+
+Todas as mutations invalidam `queryClient` apos sucesso (`['collaborators']` e `['dashboard-stats']`).
+
+### Hook generico de CRUD — `useCrudPage`
+
+O hook `useCrudPage<TFormData>` centraliza a orquestracao CRUD reutilizada pelas 3 paginas de entidades. Recebe as mutations e um `entityLabel` para mensagens de toast, e retorna estado + handlers prontos:
+
+```typescript
+const crud = useCrudPage<CollaboratorFormData>({
+  createMutation,
+  updateMutation,
+  deleteMutation,
+  entityLabel: "Colaborador",
+})
+// crud.page, crud.search, crud.formOpen, crud.editingId, crud.deletingEntity
+// crud.handleCreate, crud.handleEdit, crud.handleSave, crud.handleDelete
+// crud.handleSearchChange, crud.handleFormClose, crud.setDeletingEntity
+// crud.isSaving, crud.isDeleting, crud.serverErrors
 ```
 
 ### Escrita de dados — `useMutation`
@@ -616,34 +613,17 @@ export const handlers = [
 
 ### Padrao de handler (exemplo: colaboradores)
 
-Cada handler simula o formato DRF `PageNumberPagination` e le os dados de `mocks/data/fixtures.ts` (formato `snake_case`, como a API real).
+Cada handler simula CRUD completo no formato DRF `PageNumberPagination`, com dados mutaveis em memoria e soft-delete via `deletedIds` Set. Os dados iniciais vem de `mocks/data/fixtures.ts` (formato `snake_case`, como a API real).
 
-```typescript
-// mocks/handlers/collaborators.ts
-import { http, HttpResponse } from 'msw'
-import { collaborators } from '../data/fixtures'
+Operacoes suportadas por entidade (collaborators, machines, software):
 
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
-const PAGE_SIZE = 20
-
-export const collaboratorsHandlers = [
-  /** Retorna lista paginada de colaboradores. */
-  http.get(`${BASE}/collaborators/`, ({ request }) => {
-    const url = new URL(request.url)
-    const page = Number(url.searchParams.get('page') || '1')
-    const start = (page - 1) * PAGE_SIZE
-    const end = start + PAGE_SIZE
-    const results = collaborators.slice(start, end)
-
-    return HttpResponse.json({
-      count: collaborators.length,
-      next: end < collaborators.length ? `${BASE}/collaborators/?page=${page + 1}` : null,
-      previous: page > 1 ? `${BASE}/collaborators/?page=${page - 1}` : null,
-      results,
-    })
-  }),
-]
-```
+| Verbo | Rota | Descricao |
+|-------|------|-----------|
+| GET | `/collaborators/` | Lista paginada com busca (`?search=`) |
+| GET | `/collaborators/:id/` | Detalhe (campos do modelo, sem aliases) |
+| POST | `/collaborators/` | Criacao com validacao de duplicatas |
+| PUT | `/collaborators/:id/` | Atualizacao |
+| DELETE | `/collaborators/:id/` | Soft delete (marca ID como deletado, filtra em GET) |
 
 ## shadcn/ui
 
