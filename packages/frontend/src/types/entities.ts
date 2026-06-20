@@ -354,7 +354,7 @@ export function toMachineFormData(raw: Record<string, unknown>): MachineFormData
     cryptoMemoryCard: bool(raw.crypto_memory_card),
     soldOut: bool(raw.sold_out),
     dateSoldOut: str(raw.date_sold_out).slice(0, 10),
-    collaboratorId: raw.collaborator_id != null ? num(raw.collaborator_id) : null,
+    collaboratorId: nullableNum(raw.collaborator_id),
     collaboratorName: str(raw.collaborator_name),
   }
 }

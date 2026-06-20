@@ -66,6 +66,14 @@ describe('useCollaborators', () => {
     await waitFor(() => expect(mockApi.get).toHaveBeenCalled())
     expect(mockApi.get).toHaveBeenCalledWith('/collaborators/?page=1&search=carlos')
   })
+
+  it('não executa a busca quando enabled=false', () => {
+    mockApi.get.mockResolvedValue(mockListResponse)
+    const { result } = renderHook(() => useCollaborators(1, '', false), { wrapper: createQueryWrapper() })
+
+    expect(result.current.fetchStatus).toBe('idle')
+    expect(mockApi.get).not.toHaveBeenCalled()
+  })
 })
 
 describe('useCollaborator', () => {

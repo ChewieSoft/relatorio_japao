@@ -131,11 +131,13 @@ const MachineForm = ({ open, onOpenChange, onSave, initialData, isLoading, serve
             <FormField control={form.control} name="collaboratorId" render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Usuário</FormLabel>
-                <CollaboratorCombobox
-                  value={field.value}
-                  onChange={field.onChange}
-                  initialLabel={initialData?.collaboratorName}
-                />
+                <FormControl>
+                  <CollaboratorCombobox
+                    value={field.value}
+                    onChange={field.onChange}
+                    initialLabel={initialData?.collaboratorName}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )} />

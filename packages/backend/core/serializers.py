@@ -251,6 +251,10 @@ class MachineDetailSerializer(BaseSerializer):
     (somente leitura) derivados da relacao N:N CollaboratorMachine. O
     frontend usa esses campos para pre-preencher o seletor de usuario no
     formulario de edicao de maquina.
+
+    Requer que o queryset use prefetch_related('collaborator_machines__collaborator')
+    (ja garantido por MachineController.get_queryset) para evitar N+1 nos
+    SerializerMethodFields abaixo.
     """
 
     collaborator_id = serializers.SerializerMethodField()
@@ -305,16 +309,23 @@ class MachineCreateSerializer(BaseSerializer):
         model = Machine
 
     def validate_collaborator_id(self, value):
-        """Valida que o colaborador informado existe e esta ativo.
+        """Valida que o colaborador informado existe.
+
+        Decisao de negocio: qualquer colaborador registrado (nao soft-deleted)
+        pode ser vinculado, inclusive demitidos/inativos — o inventario reflete
+        a maquina ainda associada a quem saiu, ate a reatribuicao. Colaboradores
+        soft-deleted sao excluidos automaticamente pelo SoftDeleteManager
+        (Collaborator.objects). None mantem a maquina sem usuario.
 
         Args:
             value: PK do colaborador ou None.
 
         Returns:
-            int | None: PK validado (None mantem a maquina sem usuario).
+            int | None: PK validado.
 
         Raises:
-            serializers.ValidationError: Se o colaborador nao for encontrado.
+            serializers.ValidationError: Se o colaborador nao existir. O erro e
+                exposto sob a chave 'collaborator_id' na resposta pelo DRF.
         """
         if value is not None and not Collaborator.objects.filter(pk=value).exists():
             raise serializers.ValidationError('Colaborador nao encontrado.')

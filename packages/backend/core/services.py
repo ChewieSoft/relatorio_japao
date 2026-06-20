@@ -261,6 +261,10 @@ class MachineService(BaseService):
         Returns:
             Machine: Instancia atualizada.
         """
+        # 'collaborator_id' so esta presente quando o cliente o envia: o DRF
+        # nao injeta campos required=False ausentes em validated_data. Isso
+        # distingue "cliente nao tocou o vinculo" (omitido, no-op) de "cliente
+        # enviou null para remover". Nao trocar o campo para default=None.
         has_collaborator = 'collaborator_id' in data
         collaborator_id = data.pop('collaborator_id', None)
         machine = self.repository.get_by_id(pk)
@@ -274,6 +278,8 @@ class MachineService(BaseService):
 
         Remove (soft-delete) os vinculos ativos existentes e, se
         collaborator_id nao for None, cria ou restaura o novo vinculo.
+        Deve ser chamado dentro de um bloco @transaction.atomic (via update),
+        pois realiza multiplas escritas dependentes.
 
         Args:
             machine: Instancia da maquina.

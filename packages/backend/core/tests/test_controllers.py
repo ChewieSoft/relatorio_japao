@@ -233,6 +233,22 @@ class TestMachineController:
         assert response.data['collaborator_id'] == collaborator.id
         assert response.data['collaborator_name'] == collaborator.full_name
 
+    def test_patch_without_collaborator_id_preserves_link(self, api_client, machine, collaborator):
+        """Verifica que PATCH sem collaborator_id nao altera o vinculo existente.
+
+        Exercita o sentinel `has_collaborator = 'collaborator_id' in data`:
+        omitir o campo deve ser no-op para o vinculo (apenas outros campos mudam).
+        """
+        CollaboratorMachine.objects.create(machine=machine, collaborator=collaborator)
+        response = api_client.patch(
+            f'/api/machines/{machine.id}/', {'hostname': 'PC-RENAMED'}, format='json'
+        )
+        assert response.status_code == 200
+        machine.refresh_from_db()
+        assert machine.hostname == 'PC-RENAMED'
+        assert machine.collaborator_machines.count() == 1
+        assert machine.collaborator_machines.first().collaborator_id == collaborator.id
+
 
 @pytest.mark.django_db
 class TestSoftwareController:
