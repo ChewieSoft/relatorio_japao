@@ -18,12 +18,21 @@ import "./index.css"
  * ligado por engano contra o backend real faz parecer que os dados não
  * persistem — por isso o default é desligado.
  *
- * @returns Promise que resolve quando o worker está pronto (mock ligado) ou imediatamente.
+ * Quando o mock está desligado, remove qualquer service worker registrado por
+ * uma sessão anterior (com MSW ligado). Sem isso, o SW antigo continua
+ * controlando a página e servindo assets em cache, fazendo a UI parecer
+ * "travada"/regredida até um hard reload manual.
+ *
+ * @returns Promise que resolve quando o worker está pronto (mock ligado) ou após a limpeza.
  */
 async function enableMocking() {
   if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_MSW === 'true') {
     const { worker } = await import("./mocks/browser")
     return worker.start({ onUnhandledRequest: "bypass" })
+  }
+  if ('serviceWorker' in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations()
+    await Promise.all(registrations.map((registration) => registration.unregister()))
   }
 }
 
