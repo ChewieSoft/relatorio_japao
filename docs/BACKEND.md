@@ -124,11 +124,18 @@ O frontend usa nomes diferentes dos campos do modelo. Serializers mapeiam via `s
 | `operational_system` | `operacional_system` | `CharField(source='operacional_system')` |
 | `encrypted` | — (derivado) | `SerializerMethodField()` → `crypto_disk OR crypto_usb OR crypto_memory_card` |
 | `antivirus` | — (relacao AntiVirus) | `SerializerMethodField()` → exists com year=current |
-| `collaborator_id` | — (via CollaboratorMachine) | `SerializerMethodField()` |
-| `collaborator_name` | — (via CollaboratorMachine) | `SerializerMethodField()` |
+| `collaborator_id` | — (via CollaboratorMachine) | `SerializerMethodField()` (List/Detail) |
+| `collaborator_name` | — (via CollaboratorMachine) | `SerializerMethodField()` (List/Detail) |
 | `machine_type` | `type` | `CharField(source='type')` |
 
 > **CRITICO N+1**: MachineController.get_queryset() DEVE usar `prefetch_related('collaborator_machines__collaborator', 'antivirus_records')`.
+
+> **Atribuicao de usuario (escrita)**: `MachineCreateSerializer` aceita `collaborator_id`
+> (write-only, opcional, nullable) para vincular **um unico** colaborador a maquina.
+> `MachineService.create/update` gerencia a relacao N:N `CollaboratorMachine` em uma
+> `@transaction.atomic`: no update, substitui o vinculo atual (soft-delete dos ativos +
+> restore-or-create do novo), tratando a relacao como 1:1 na tela. `collaborator_id: null`
+> remove o vinculo. Espelha o padrao de escrita N:N de `CollaboratorService`.
 
 ### Software
 

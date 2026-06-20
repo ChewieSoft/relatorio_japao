@@ -16,9 +16,11 @@ import { toCollaborator, toCollaboratorPayload, toCollaboratorFormData } from '.
  *
  * @param page - Número da página (default: 1).
  * @param search - Termo de busca server-side (opcional).
+ * @param enabled - Se a query deve executar (default: true). Permite adiar a
+ *   busca, p.ex. só quando um seletor de colaborador é aberto.
  * @returns Resultado da query com dados paginados de colaboradores.
  */
-export function useCollaborators(page = 1, search = '') {
+export function useCollaborators(page = 1, search = '', enabled = true) {
   return useQuery({
     queryKey: ['collaborators', page, search],
     queryFn: async (): Promise<PaginatedResponse<Collaborator>> => {
@@ -32,6 +34,7 @@ export function useCollaborators(page = 1, search = '') {
         results: res.data.results.map((c: Record<string, unknown>) => toCollaborator(c)),
       }
     },
+    enabled,
     placeholderData: keepPreviousData,
   })
 }

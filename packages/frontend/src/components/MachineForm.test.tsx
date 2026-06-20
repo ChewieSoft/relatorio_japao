@@ -7,6 +7,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import MachineForm from './MachineForm'
+import { createQueryWrapper } from '@/test/wrapper'
 import type { MachineFormData } from '@/types/entities'
 
 /** Props padrão para renderizar o formulário. */
@@ -18,7 +19,7 @@ function renderForm(overrides: Partial<Parameters<typeof MachineForm>[0]> = {}) 
     isLoading: false,
     ...overrides,
   }
-  render(<MachineForm {...defaults} />)
+  render(<MachineForm {...defaults} />, { wrapper: createQueryWrapper() })
   return defaults
 }
 
@@ -41,6 +42,8 @@ const editData: MachineFormData = {
   cryptoMemoryCard: false,
   soldOut: false,
   dateSoldOut: '',
+  collaboratorId: 1,
+  collaboratorName: 'Carlos Tanaka',
 }
 
 describe('MachineForm', () => {
@@ -77,5 +80,16 @@ describe('MachineForm', () => {
     await waitFor(() => {
       expect(screen.getByText('Modelo é obrigatório')).toBeInTheDocument()
     })
+  })
+
+  it('renderiza o seletor de usuário com placeholder em modo criação', () => {
+    renderForm()
+    expect(screen.getByText('Usuário')).toBeInTheDocument()
+    expect(screen.getByText('Selecione um usuário')).toBeInTheDocument()
+  })
+
+  it('exibe o usuário vinculado no seletor em modo edição', () => {
+    renderForm({ initialData: editData })
+    expect(screen.getByText('Carlos Tanaka')).toBeInTheDocument()
   })
 })

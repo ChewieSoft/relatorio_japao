@@ -81,7 +81,8 @@ packages/frontend/src/
 │   ├── SearchInput.tsx         (campo de busca reutilizável com debounce 400ms)
 │   ├── DeleteConfirmDialog.tsx (diálogo de confirmação de exclusão, soft delete)
 │   ├── CollaboratorForm.tsx    (formulário Dialog create/edit com zod)
-│   ├── MachineForm.tsx         (formulário Sheet create/edit com zod, 18 campos)
+│   ├── MachineForm.tsx         (formulário Sheet create/edit com zod; inclui seletor de usuário)
+│   ├── CollaboratorCombobox.tsx (combobox de busca server-side p/ atribuir 1 colaborador)
 │   ├── SoftwareForm.tsx        (formulário Dialog create/edit com zod)
 │   └── ui/              (60+ componentes shadcn/ui)
 ├── pages/
