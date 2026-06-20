@@ -1,9 +1,10 @@
 /**
  * Formulário de máquina em Sheet (painel lateral, create/edit).
  *
- * Usa Sheet ao invés de Dialog devido à densidade de campos (18).
+ * Usa Sheet ao invés de Dialog devido à densidade de campos (19).
  * Modo dual: sem initialData = criação, com initialData = edição.
  * Campo condicional: dateSoldOut visível quando soldOut=true.
+ * Inclui seletor de usuário (CollaboratorCombobox) para vincular 1 colaborador.
  *
  * @param {Object} props
  * @param {boolean} props.open - Controla visibilidade do Sheet.
@@ -25,6 +26,7 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
+import CollaboratorCombobox from "@/components/CollaboratorCombobox"
 import { Loader2 } from "lucide-react"
 
 /** Mapeamento snake_case (API) → camelCase (form) para erros server-side. */
@@ -41,6 +43,7 @@ const SERVER_FIELD_MAP: Record<string, keyof MachineFormData> = {
   crypto_memory_card: 'cryptoMemoryCard',
   sold_out: 'soldOut',
   date_sold_out: 'dateSoldOut',
+  collaborator_id: 'collaboratorId',
 }
 
 const DEFAULT_VALUES: MachineFormData = {
@@ -62,6 +65,8 @@ const DEFAULT_VALUES: MachineFormData = {
   cryptoMemoryCard: false,
   soldOut: false,
   dateSoldOut: '',
+  collaboratorId: null,
+  collaboratorName: '',
 }
 
 interface MachineFormProps {
@@ -119,6 +124,18 @@ const MachineForm = ({ open, onOpenChange, onSave, initialData, isLoading, serve
               <FormItem>
                 <FormLabel>Hostname</FormLabel>
                 <FormControl><Input placeholder="JRC-TI-001" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="collaboratorId" render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Usuário</FormLabel>
+                <CollaboratorCombobox
+                  value={field.value}
+                  onChange={field.onChange}
+                  initialLabel={initialData?.collaboratorName}
+                />
                 <FormMessage />
               </FormItem>
             )} />

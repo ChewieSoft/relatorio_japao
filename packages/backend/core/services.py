@@ -209,11 +209,102 @@ class CollaboratorService(BaseService):
 
 
 class MachineService(BaseService):
-    """Servico de logica de negocio para maquinas."""
+    """Servico de logica de negocio para maquinas.
+
+    Alem do CRUD padrao, gerencia o vinculo com um unico colaborador
+    (relacao N:N CollaboratorMachine) a partir do campo collaborator_id
+    enviado pelo formulario de maquina. A tela trata a relacao como 1:1,
+    entao a maquina mantem no maximo um colaborador ativo vinculado.
+
+    Attributes:
+        repository: MachineRepository para acesso aos dados de maquina.
+        collaborator_machine_repo: Repository da relacao colaborador-maquina.
+    """
 
     def __init__(self):
-        """Inicializa service com MachineRepository."""
+        """Inicializa service com repositories de maquina e relacao N:N."""
         self.repository = MachineRepository()
+        self.collaborator_machine_repo = CollaboratorMachineRepository()
+
+    @transaction.atomic
+    def create(self, data):
+        """Cria maquina e, se informado, vincula um colaborador.
+
+        Args:
+            data: Dicionario com campos da maquina. Pode incluir a chave
+                'collaborator_id' (PK do colaborador) ou None para nenhum.
+
+        Returns:
+            Machine: Instancia criada, com o vinculo associado se informado.
+        """
+        collaborator_id = data.pop('collaborator_id', None)
+        machine = self.repository.create(**data)
+        if collaborator_id is not None:
+            self.collaborator_machine_repo.create(
+                machine=machine, collaborator_id=collaborator_id
+            )
+        return machine
+
+    @transaction.atomic
+    def update(self, pk, data):
+        """Atualiza maquina e sincroniza o vinculo com colaborador.
+
+        Quando 'collaborator_id' esta presente nos dados (inclusive None),
+        substitui o vinculo atual da maquina: remove (soft-delete) os
+        vinculos ativos e, se nao-nulo, cria ou restaura o novo vinculo.
+
+        Args:
+            pk: Chave primaria da maquina.
+            data: Dicionario com campos a atualizar. Pode incluir
+                'collaborator_id'.
+
+        Returns:
+            Machine: Instancia atualizada.
+        """
+        has_collaborator = 'collaborator_id' in data
+        collaborator_id = data.pop('collaborator_id', None)
+        machine = self.repository.get_by_id(pk)
+        self.repository.update(machine, **data)
+        if has_collaborator:
+            self._sync_collaborator(machine, collaborator_id)
+        return machine
+
+    def _sync_collaborator(self, machine, collaborator_id):
+        """Define o colaborador unico vinculado a maquina.
+
+        Remove (soft-delete) os vinculos ativos existentes e, se
+        collaborator_id nao for None, cria ou restaura o novo vinculo.
+
+        Args:
+            machine: Instancia da maquina.
+            collaborator_id: PK do colaborador, ou None para remover o vinculo.
+        """
+        for rel in self.collaborator_machine_repo.filter(machine=machine):
+            self.collaborator_machine_repo.soft_delete(rel)
+        if collaborator_id is not None:
+            self._restore_or_create(machine, collaborator_id)
+
+    def _restore_or_create(self, machine, collaborator_id):
+        """Restaura vinculo soft-deleted ou cria nova relacao colaborador-maquina.
+
+        Evita acumulo de registros soft-deleted e previne IntegrityError na
+        unique constraint quando o mesmo par colaborador-maquina e
+        re-atribuido apos remocao.
+
+        Args:
+            machine: Instancia da maquina.
+            collaborator_id: PK do colaborador.
+        """
+        from .models import CollaboratorMachine
+        existing = CollaboratorMachine.all_objects.filter(
+            machine=machine, collaborator_id=collaborator_id, deleted_at__isnull=False
+        ).first()
+        if existing:
+            existing.restore()
+        else:
+            self.collaborator_machine_repo.create(
+                machine=machine, collaborator_id=collaborator_id
+            )
 
 
 class SoftwareService(BaseService):

@@ -6,10 +6,24 @@
  * Formato DRF PageNumberPagination (20 itens/página).
  */
 import { http, HttpResponse } from 'msw'
-import { machines } from '../data/fixtures'
+import { collaborators, machines } from '../data/fixtures'
 
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 const PAGE_SIZE = 20
+
+/**
+ * Resolve o nome de um colaborador pelo ID (mock).
+ *
+ * Espelha o backend, que deriva collaborator_name da relação
+ * CollaboratorMachine. Retorna '' quando o ID é nulo ou desconhecido.
+ *
+ * @param id - ID do colaborador vindo do payload (ou null).
+ * @returns Nome do colaborador, ou '' se não encontrado.
+ */
+function resolveCollaboratorName(id: unknown): string {
+  const found = collaborators.find((c) => c.id === id)
+  return found ? found.name : ''
+}
 
 /** Dados mutáveis para simular CRUD em memória. */
 let data = [...machines]
@@ -58,6 +72,8 @@ function toDetail(record: (typeof data)[number]) {
     crypto_memory_card: false,
     sold_out: false,
     date_sold_out: null,
+    collaborator_id: record.collaborator_id,
+    collaborator_name: record.collaborator_name,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
     deleted_at: null,
@@ -135,8 +151,8 @@ export const machinesHandlers = [
       operational_system: body.operacional_system as string,
       encrypted: (body.crypto_disk ?? false) as boolean,
       antivirus: false,
-      collaborator_id: null,
-      collaborator_name: '',
+      collaborator_id: (body.collaborator_id as number | null) ?? null,
+      collaborator_name: resolveCollaboratorName(body.collaborator_id),
       machine_type: body.type as 'desktop' | 'notebook',
     }
     data.push(newRecord)
@@ -165,6 +181,8 @@ export const machinesHandlers = [
       mac_address: body.mac_address as string,
       operational_system: body.operacional_system as string,
       encrypted: body.crypto_disk as boolean,
+      collaborator_id: (body.collaborator_id as number | null) ?? null,
+      collaborator_name: resolveCollaboratorName(body.collaborator_id),
       machine_type: body.type as 'desktop' | 'notebook',
     }
 

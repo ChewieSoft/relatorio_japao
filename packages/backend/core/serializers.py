@@ -245,17 +245,80 @@ class CollaboratorCreateSerializer(serializers.ModelSerializer):
 
 
 class MachineDetailSerializer(BaseSerializer):
-    """Serializer completo de maquina."""
+    """Serializer completo de maquina.
+
+    Alem dos campos do modelo, expoe collaborator_id e collaborator_name
+    (somente leitura) derivados da relacao N:N CollaboratorMachine. O
+    frontend usa esses campos para pre-preencher o seletor de usuario no
+    formulario de edicao de maquina.
+    """
+
+    collaborator_id = serializers.SerializerMethodField()
+    collaborator_name = serializers.SerializerMethodField()
 
     class Meta(BaseSerializer.Meta):
         model = Machine
+
+    def get_collaborator_id(self, obj):
+        """Retorna o ID do primeiro colaborador vinculado ou None.
+
+        Usa relacao prefetched no controller para evitar N+1 queries.
+
+        Args:
+            obj: Instancia de Machine.
+
+        Returns:
+            int | None: PK do colaborador vinculado, ou None se nenhum.
+        """
+        rels = obj.collaborator_machines.all()
+        return rels[0].collaborator_id if rels else None
+
+    def get_collaborator_name(self, obj):
+        """Retorna o nome do primeiro colaborador vinculado ou None.
+
+        Usa relacao prefetched no controller para evitar N+1 queries.
+
+        Args:
+            obj: Instancia de Machine.
+
+        Returns:
+            str | None: Nome completo do colaborador vinculado, ou None.
+        """
+        rels = obj.collaborator_machines.all()
+        return rels[0].collaborator.full_name if rels else None
 
 
 class MachineCreateSerializer(BaseSerializer):
-    """Serializer de criacao de maquina."""
+    """Serializer de criacao e atualizacao de maquina.
+
+    Aceita collaborator_id (write-only, opcional) para vincular um unico
+    colaborador a maquina via relacao N:N CollaboratorMachine. A criacao
+    ou substituicao do vinculo e responsabilidade do MachineService, nao
+    deste serializer.
+    """
+
+    collaborator_id = serializers.IntegerField(
+        write_only=True, required=False, allow_null=True
+    )
 
     class Meta(BaseSerializer.Meta):
         model = Machine
+
+    def validate_collaborator_id(self, value):
+        """Valida que o colaborador informado existe e esta ativo.
+
+        Args:
+            value: PK do colaborador ou None.
+
+        Returns:
+            int | None: PK validado (None mantem a maquina sem usuario).
+
+        Raises:
+            serializers.ValidationError: Se o colaborador nao for encontrado.
+        """
+        if value is not None and not Collaborator.objects.filter(pk=value).exists():
+            raise serializers.ValidationError('Colaborador nao encontrado.')
+        return value
 
 
 class SoftwareDetailSerializer(BaseSerializer):

@@ -61,6 +61,8 @@ const validMachine: MachineFormData = {
   cryptoMemoryCard: false,
   soldOut: false,
   dateSoldOut: '',
+  collaboratorId: 1,
+  collaboratorName: 'Carlos Tanaka',
 }
 
 const validSoftware: SoftwareFormData = {
@@ -282,6 +284,18 @@ describe('toMachinePayload', () => {
     const payload = toMachinePayload(validMachine)
     expect(payload.date_sold_out).toBeNull()
   })
+
+  it('inclui collaborator_id e não envia collaboratorName', () => {
+    const payload = toMachinePayload(validMachine)
+    expect(payload.collaborator_id).toBe(1)
+    expect(payload).not.toHaveProperty('collaborator_name')
+    expect(payload).not.toHaveProperty('collaboratorName')
+  })
+
+  it('envia collaborator_id null quando sem usuário', () => {
+    const payload = toMachinePayload({ ...validMachine, collaboratorId: null })
+    expect(payload.collaborator_id).toBeNull()
+  })
 })
 
 describe('toMachineFormData', () => {
@@ -305,6 +319,8 @@ describe('toMachineFormData', () => {
       crypto_memory_card: false,
       sold_out: false,
       date_sold_out: null,
+      collaborator_id: 1,
+      collaborator_name: 'Carlos Tanaka',
     }
     const form = toMachineFormData(raw)
     expect(form.serviceTag).toBe('ABCD1234')
@@ -312,6 +328,14 @@ describe('toMachineFormData', () => {
     expect(form.datePurchase).toBe('2024-06-15')
     expect(form.cryptoDisk).toBe(true)
     expect(form.dateSoldOut).toBe('')
+    expect(form.collaboratorId).toBe(1)
+    expect(form.collaboratorName).toBe('Carlos Tanaka')
+  })
+
+  it('mantém collaboratorId null e collaboratorName vazio quando ausentes', () => {
+    const form = toMachineFormData({ hostname: 'X', type: 'desktop' })
+    expect(form.collaboratorId).toBeNull()
+    expect(form.collaboratorName).toBe('')
   })
 })
 

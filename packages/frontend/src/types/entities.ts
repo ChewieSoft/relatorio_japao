@@ -118,6 +118,10 @@ export interface MachineFormData {
   cryptoMemoryCard: boolean
   soldOut: boolean
   dateSoldOut: string
+  /** ID do colaborador (usuário) vinculado à máquina, ou null se nenhum. */
+  collaboratorId: number | null
+  /** Nome do colaborador vinculado — usado só para exibir no seletor (não enviado). */
+  collaboratorName: string
 }
 
 /** Tipos válidos de licença de software. */
@@ -181,6 +185,8 @@ export const machineSchema = z.object({
   cryptoMemoryCard: z.boolean(),
   soldOut: z.boolean(),
   dateSoldOut: z.string(),
+  collaboratorId: z.number().int().nullable(),
+  collaboratorName: z.string(),
 }).refine(
   (data) => !data.soldOut || data.dateSoldOut.length > 0,
   { message: 'Data de baixa é obrigatória quando em baixa patrimonial', path: ['dateSoldOut'] }
@@ -255,6 +261,7 @@ export function toMachinePayload(data: MachineFormData): Record<string, unknown>
     crypto_memory_card: data.cryptoMemoryCard,
     sold_out: data.soldOut,
     date_sold_out: data.soldOut && data.dateSoldOut ? `${data.dateSoldOut}T00:00:00Z` : null,
+    collaborator_id: data.collaboratorId,
   }
 }
 
@@ -347,6 +354,8 @@ export function toMachineFormData(raw: Record<string, unknown>): MachineFormData
     cryptoMemoryCard: bool(raw.crypto_memory_card),
     soldOut: bool(raw.sold_out),
     dateSoldOut: str(raw.date_sold_out).slice(0, 10),
+    collaboratorId: raw.collaborator_id != null ? num(raw.collaborator_id) : null,
+    collaboratorName: str(raw.collaborator_name),
   }
 }
 
