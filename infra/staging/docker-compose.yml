@@ -82,7 +82,7 @@ services:
       context: ./runner
     container_name: jrc-staging-djr-runner
     restart: always
-    networks: [runner-net]
+    networks: [djr-runner-net]
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "runner-work:/runner/_work"
@@ -112,8 +112,10 @@ networks:
   djr-net:
     name: djr-net
     driver: bridge
-  runner-net:
-    name: runner-net
+  # Rede propria do runner (isolada; nome especifico do projeto para nao colidir
+  # com a `runner-net` de outras stacks no mesmo host).
+  djr-runner-net:
+    name: djr-runner-net
     driver: bridge
 
 volumes:
