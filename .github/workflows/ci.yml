@@ -74,11 +74,6 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
       - name: Lint (ESLint)
-        # Report-only por enquanto: ha 3 erros de lint PRE-EXISTENTES em arquivos
-        # boilerplate do shadcn/Tailwind (ui/command.tsx, ui/textarea.tsx,
-        # tailwind.config.ts). build + test continuam como gates rigidos.
-        # TODO: corrigir os 3 erros e remover este continue-on-error.
-        continue-on-error: true
         run: npm run lint
       - name: Build (Vite)
         run: npm run build
