@@ -102,5 +102,7 @@ Acesse `http://localhost:8080`. Dados são servidos pelo MSW em memória.
 2. **CRUD de entidades dependentes** — Email, Cellphone, Wifi, AntiVirus, Server, ServerAccess, ServerErpAccess, DataDestroyed, PenDrive (hoje acessíveis apenas via Django Admin).
 3. **RBAC / Permissões** — controle de acesso baseado em perfis (admin vs. usuário comum).
 4. **Testes E2E** — Playwright ou Cypress cobrindo fluxos críticos (login, CRUD, geração de relatório).
-5. **Pipeline CI/CD de produção** — build, testes e deploy (a CD Staging já existe).
+5. **Pipeline CI/CD de produção** — build, testes e deploy (a CD Staging já existe em `djr.jrcbrasil.net`).
 6. **Auditoria** — log de quem alterou o quê e quando para compliance.
+7. **Trocar a credencial do runner de staging** — hoje em *stopgap* (token do `gh` do operador); migrar para um **PAT dedicado** (escopo `repo`) na linha `RUNNER_ACCESS_TOKEN` do `.env` persistente do host + `docker compose up -d --force-recreate runner`. Ver [`infra/staging/README.md`](infra/staging/README.md).
+8. **Migração para a org `JRC-Brasil` + repositório privado** (pós-entrega da faculdade) — re-registrar o runner self-hosted (novo `REPO_URL` + novo PAT) e repontar o owner do GHCR (derivado de `github.repository_owner` no CD). Registros de runner **não** transferem com o repo.
