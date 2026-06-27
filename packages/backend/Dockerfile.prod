@@ -1,0 +1,41 @@
+# syntax=docker/dockerfile:1.7
+#
+# Imagem de producao/staging do backend Django (gunicorn).
+# Contexto de build: packages/backend/ (igual ao Dockerfile de dev).
+# Diferenca para o dev: serve via gunicorn (nao runserver) e coleta os
+# estaticos do admin em build-time (servidos por WhiteNoise em runtime).
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# psycopg2-binary, reportlab e openpyxl distribuem wheels — sem toolchain de build.
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+# Coleta os estaticos do admin em build-time (sem acesso a banco).
+# DEBUG=False exige SECRET_KEY; o valor dummy serve apenas ao collectstatic
+# e nao e embarcado em runtime (o SECRET_KEY real vem do ambiente do container).
+RUN DEBUG=False SECRET_KEY=build-time-collectstatic-key \
+    python manage.py collectstatic --noinput
+
+# Executa como usuario nao-root.
+RUN useradd --create-home --uid 1000 appuser \
+    && chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8000
+
+# Healthcheck bate no endpoint publico /healthz/ (sem auth, sem DB).
+HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=5 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz/')" || exit 1
+
+CMD ["gunicorn", "config.wsgi:application", \
+     "--bind", "0.0.0.0:8000", \
+     "--workers", "3", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-"]

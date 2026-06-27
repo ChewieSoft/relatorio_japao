@@ -1,0 +1,5 @@
+# Declara os labels dos runners self-hosted (kratos) para o actionlint
+# nao reclamar de "label unknown" no runs-on: [self-hosted, staging].
+self-hosted-runner:
+  labels:
+    - staging

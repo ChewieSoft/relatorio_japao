@@ -1,0 +1,123 @@
+# infra/staging/docker-compose.yml
+#
+# Stack de staging do Relatorio JRC no host kratos (192.168.0.6).
+# Espelha o blueprint canonico jrc-staging-sq, adaptado para Django/gunicorn + JWT.
+#
+# Dominios (two-origin):
+#   frontend -> djr.jrcbrasil.net
+#   backend  -> api.djr.jrcbrasil.net
+# TLS e roteamento entregues pelo nginx-proxy + acme-companion JA existentes no
+# host (rede externa nginx-proxy_default). Certs auto-emitidos no primeiro `up`.
+#
+# Variaveis materializadas em `.env`:
+#   - persistente no host (runner): RUNNER_ACCESS_TOKEN, POSTGRES_DJR_PASSWORD, DJANGO_SECRET_KEY
+#   - efemero no workspace (CD deploy): IMAGE_TAG, NGINX_PROXY_NETWORK, POSTGRES_DJR_PASSWORD, DJANGO_SECRET_KEY
+#
+# One-offs (migrate) SEMPRE com `-e VIRTUAL_HOST= -e LETSENCRYPT_HOST=` para nao
+# serem descobertos pelo docker-gen e poluirem o upstream pool (cicd licoes 29/34).
+
+name: jrc-staging-djr
+
+services:
+
+  postgres-djr:
+    image: postgres:16-alpine@sha256:e013e867e712fec275706a6c51c966f0bb0c93cfa8f51000f85a15f9865a28cb
+    container_name: jrc-staging-djr-postgres
+    restart: always
+    networks: [djr-net]
+    volumes:
+      - "djr-pgdata:/var/lib/postgresql/data"
+    environment:
+      POSTGRES_USER: relatorio_japao
+      POSTGRES_PASSWORD: ${POSTGRES_DJR_PASSWORD}
+      POSTGRES_DB: relatorio_japao
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U relatorio_japao -d relatorio_japao"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  backend:
+    image: ghcr.io/chewiesoft/relatorio-japao-backend:${IMAGE_TAG:-latest}
+    container_name: jrc-staging-djr-backend
+    restart: always
+    init: true
+    networks: [nginx-proxy, djr-net]
+    depends_on:
+      postgres-djr:
+        condition: service_healthy
+    environment:
+      DEBUG: "False"
+      SECRET_KEY: ${DJANGO_SECRET_KEY}
+      # localhost/127.0.0.1 sao necessarios para o healthcheck interno do container
+      # (urllib bate em 127.0.0.1:8000/healthz/; sem isso o Django responde 400).
+      ALLOWED_HOSTS: api.djr.jrcbrasil.net,localhost,127.0.0.1
+      # Banco (consumido pelo Django)
+      DB_NAME: relatorio_japao
+      DB_USER: relatorio_japao
+      DB_PASSWORD: ${POSTGRES_DJR_PASSWORD}
+      DB_HOST: postgres-djr
+      DB_PORT: "5432"
+      # CORS + CSRF (two-origin: a SPA em djr.* chama a API em api.djr.*)
+      CORS_ALLOWED_ORIGINS: https://djr.jrcbrasil.net
+      CSRF_TRUSTED_ORIGINS: https://djr.jrcbrasil.net,https://api.djr.jrcbrasil.net
+      # nginx-proxy / acme-companion (backend tem subdominio proprio)
+      VIRTUAL_HOST: api.djr.jrcbrasil.net
+      VIRTUAL_PORT: "8000"
+      LETSENCRYPT_HOST: api.djr.jrcbrasil.net
+      LETSENCRYPT_EMAIL: it@jrcbrasil.com
+
+  frontend:
+    image: ghcr.io/chewiesoft/relatorio-japao-frontend:${IMAGE_TAG:-latest}
+    container_name: jrc-staging-djr-frontend
+    restart: always
+    networks: [nginx-proxy]
+    environment:
+      VIRTUAL_HOST: djr.jrcbrasil.net
+      LETSENCRYPT_HOST: djr.jrcbrasil.net
+      LETSENCRYPT_EMAIL: it@jrcbrasil.com
+
+  runner:
+    build:
+      context: ./runner
+    container_name: jrc-staging-djr-runner
+    restart: always
+    networks: [djr-runner-net]
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "runner-work:/runner/_work"
+    environment:
+      RUNNER_NAME: jrc-staging-djr-01
+      RUNNER_LABELS: staging,self-hosted,linux,x64
+      REPO_URL: https://github.com/ChewieSoft/relatorio_japao
+      RUNNER_SCOPE: repo
+      ACCESS_TOKEN: ${RUNNER_ACCESS_TOKEN:-}
+      EPHEMERAL: "true"
+      # NAO definir DISABLE_AUTO_UPDATE — qualquer valor desliga o auto-update do
+      # binario (cicd licao 48/§8a). Sem a var, o runner mantem o binario atual.
+    extra_hosts:
+      - "djr.jrcbrasil.net:host-gateway"
+      - "api.djr.jrcbrasil.net:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f Runner.Listener > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+networks:
+  nginx-proxy:
+    external: true
+    name: ${NGINX_PROXY_NETWORK:-nginx-proxy_default}
+  djr-net:
+    name: djr-net
+    driver: bridge
+  # Rede propria do runner (isolada; nome especifico do projeto para nao colidir
+  # com a `runner-net` de outras stacks no mesmo host).
+  djr-runner-net:
+    name: djr-runner-net
+    driver: bridge
+
+volumes:
+  djr-pgdata:
+  runner-work:

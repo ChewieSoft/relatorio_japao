@@ -1,0 +1,14 @@
+# Contexto de build enxuto — frontend React/Vite.
+node_modules/
+dist/
+.vite/
+coverage/
+playwright-report/
+test-results/
+.env
+.env.*
+!.env.example
+.git/
+.gitignore
+*.md
+bun.lockb

@@ -1,0 +1,200 @@
+name: CD Staging
+
+# Deploy de staging para djr.jrcbrasil.net (frontend) + api.djr.jrcbrasil.net (backend).
+# Dispara no push para a branch `staging`. Fluxo: gate (CI) -> build/push GHCR -> deploy
+# no runner self-hosted (label staging) no host kratos.
+on:
+  push:
+    branches: [staging]
+    # Mudancas so de documentacao nao redeployam (o deploy e idempotente, mas
+    # evita rodar build+deploy a toa). Commits que mexem em codigo/infra rodam
+    # normalmente (paths-ignore so pula quando TODOS os arquivos batem).
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+
+# Deploys serializados (nunca cancela um em andamento — cicd licao 6).
+concurrency:
+  group: deploy-staging-relatorio-japao
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # Reusa o ci.yml como gate — sem duplicar passos (licao cicd 43).
+  gate:
+    uses: ./.github/workflows/ci.yml
+
+  build-and-push-backend:
+    name: Build & push backend (GHCR)
+    needs: gate
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        name: Calcular tags
+        run: |
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "image=ghcr.io/$owner/relatorio-japao-backend" >> "$GITHUB_OUTPUT"
+          echo "image_tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: packages/backend
+          file: packages/backend/Dockerfile.prod
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.image_tag }}
+            ${{ steps.meta.outputs.image }}:latest
+
+  build-and-push-frontend:
+    name: Build & push frontend (GHCR)
+    needs: gate
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        name: Calcular tags
+        run: |
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "image=ghcr.io/$owner/relatorio-japao-frontend" >> "$GITHUB_OUTPUT"
+          echo "image_tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: packages/frontend
+          file: packages/frontend/Dockerfile.prod
+          push: true
+          # VITE_API_URL e build-time (embutido no bundle — licoes cicd 18-20).
+          build-args: |
+            VITE_API_URL=${{ vars.VITE_API_URL || 'https://api.djr.jrcbrasil.net/api' }}
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.image_tag }}
+            ${{ steps.meta.outputs.image }}:latest
+
+  deploy:
+    name: Deploy no kratos (self-hosted)
+    needs: [build-and-push-backend, build-and-push-frontend]
+    runs-on: [self-hosted, staging]
+    env:
+      COMPOSE: infra/staging/docker-compose.yml
+      IMAGE_TAG: ${{ needs.build-and-push-backend.outputs.image_tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parity check das tags
+        run: |
+          b='${{ needs.build-and-push-backend.outputs.image_tag }}'
+          f='${{ needs.build-and-push-frontend.outputs.image_tag }}'
+          [ "$b" = "$f" ] || { echo "::error::tags divergentes backend=$b frontend=$f"; exit 1; }
+          echo "Deploy da tag: $b"
+
+      - name: Capturar tag anterior (rollback)
+        id: prev
+        run: |
+          img=$(docker inspect -f '{{.Image}}' jrc-staging-djr-backend 2>/dev/null) || true
+          prev=""
+          if [ -n "$img" ]; then
+            prev=$(docker image inspect "$img" --format '{{join .RepoTags " "}}' 2>/dev/null \
+              | tr ' ' '\n' | grep -oE 'sha-[0-9a-f]{7}' | head -1) || true
+          fi
+          echo "tag=$prev" >> "$GITHUB_OUTPUT"
+          echo "Tag anterior: ${prev:-<nenhuma>}"
+
+      - name: Validar DNS
+        run: |
+          for h in djr.jrcbrasil.net api.djr.jrcbrasil.net; do
+            getent hosts "$h" >/dev/null 2>&1 && echo "OK $h" || echo "::warning::$h nao resolve no runner"
+          done
+
+      - name: Gerar .env de staging
+        env:
+          POSTGRES_DJR_PASSWORD: ${{ secrets.POSTGRES_DJR_PASSWORD }}
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+          NGINX_PROXY_NETWORK: ${{ vars.NGINX_PROXY_NETWORK || 'nginx-proxy_default' }}
+        run: |
+          umask 077
+          {
+            printf 'IMAGE_TAG=%s\n' "$IMAGE_TAG"
+            printf 'NGINX_PROXY_NETWORK=%s\n' "$NGINX_PROXY_NETWORK"
+            printf 'POSTGRES_DJR_PASSWORD=%s\n' "$POSTGRES_DJR_PASSWORD"
+            printf 'DJANGO_SECRET_KEY=%s\n' "$DJANGO_SECRET_KEY"
+          } > infra/staging/.env
+
+      - name: GHCR login (3x retry)
+        run: |
+          for i in 1 2 3; do
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin && break
+            echo "login ghcr falhou (tentativa $i)"; sleep $((i*10))
+          done
+
+      - name: Pull das imagens
+        run: docker compose -f "$COMPOSE" --env-file infra/staging/.env pull backend frontend postgres-djr
+
+      - name: Migrar banco (one-off)
+        run: |
+          docker compose -f "$COMPOSE" --env-file infra/staging/.env run --rm \
+            -e VIRTUAL_HOST= -e LETSENCRYPT_HOST= \
+            backend python manage.py migrate --noinput
+
+      - name: Limpar orfaos de one-off (cicd §34)
+        run: |
+          docker ps -aq \
+            --filter "label=com.docker.compose.project=jrc-staging-djr" \
+            --filter "label=com.docker.compose.oneoff=True" | xargs -r docker rm -f
+
+      - name: Subir stack (escopado — sem runner)
+        run: docker compose -f "$COMPOSE" --env-file infra/staging/.env up -d backend frontend postgres-djr
+
+      - name: Aguardar healthy (max 150s)
+        run: |
+          deadline=$((SECONDS+150))
+          for c in jrc-staging-djr-postgres jrc-staging-djr-backend jrc-staging-djr-frontend; do
+            until [ "$(docker inspect -f '{{.State.Health.Status}}' "$c" 2>/dev/null)" = "healthy" ]; do
+              if [ "$SECONDS" -ge "$deadline" ]; then
+                echo "::error::$c nao ficou healthy"; docker logs --tail 50 "$c" || true; exit 1
+              fi
+              sleep 5
+            done
+            echo "healthy: $c"
+          done
+
+      - name: Smoke test (roteamento via nginx-proxy)
+        run: |
+          ok=0
+          for i in $(seq 1 20); do
+            if curl -fsSk https://djr.jrcbrasil.net/ >/dev/null \
+               && curl -fsSk https://api.djr.jrcbrasil.net/healthz/ >/dev/null; then ok=1; break; fi
+            echo "smoke tentativa $i..."; sleep 8
+          done
+          [ "$ok" = 1 ] || { echo "::error::smoke falhou (rota/nginx-proxy; se 1o deploy, cheque acme-companion)"; exit 1; }
+          echo "Smoke OK"
+
+      - name: Rollback (em falha, se houver tag anterior)
+        if: failure() && steps.prev.outputs.tag != ''
+        run: |
+          echo "::warning::deploy falhou — revertendo para ${{ steps.prev.outputs.tag }}"
+          sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=${{ steps.prev.outputs.tag }}/" infra/staging/.env
+          docker compose -f "$COMPOSE" --env-file infra/staging/.env up -d backend frontend postgres-djr
+
+      - name: Prune de imagens
+        if: always()
+        run: docker image prune -f || true
+
+      - name: Limpar .env efemero
+        if: always()
+        run: rm -f infra/staging/.env

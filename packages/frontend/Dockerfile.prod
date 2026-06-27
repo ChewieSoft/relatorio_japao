@@ -1,0 +1,33 @@
+# syntax=docker/dockerfile:1.7
+#
+# Imagem de producao/staging do frontend React (build Vite -> nginx).
+# Contexto de build: packages/frontend/ (igual ao Dockerfile de dev).
+#
+# IMPORTANTE: VITE_* sao variaveis de BUILD-TIME — sao embutidas no bundle JS.
+# A URL da API de staging entra via build-arg (a imagem e especifica do ambiente).
+ARG NODE_VERSION=20-slim
+ARG NGINX_VERSION=stable-alpine
+
+FROM node:${NODE_VERSION} AS build
+WORKDIR /app
+
+ARG VITE_API_URL=/api
+ENV VITE_API_URL=$VITE_API_URL
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
+FROM nginx:${NGINX_VERSION} AS runtime
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+
+EXPOSE 80
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=5 \
+    CMD wget -qO- http://127.0.0.1:80/ >/dev/null 2>&1 || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]

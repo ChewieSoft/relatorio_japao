@@ -22,6 +22,14 @@ else:
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,backend', cast=Csv())
 
+# Origens confiaveis para CSRF (necessario para o admin Django sob HTTPS atras
+# do nginx-proxy). Em staging: https://djr.jrcbrasil.net,https://api.djr.jrcbrasil.net
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
+
+# Atras do reverse proxy (nginx-proxy/acme-companion), o Django enxerga HTTPS
+# pelo header X-Forwarded-Proto encaminhado pelo proxy.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -43,6 +51,9 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    # WhiteNoise serve arquivos estaticos (admin) sob gunicorn em staging/producao.
+    # Deve vir logo apos o SecurityMiddleware.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -98,6 +109,17 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+# Armazenamento de estaticos via WhiteNoise (comprime; sem manifest para
+# permanecer compativel com DEBUG=True onde o collectstatic ainda nao rodou).
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
+    },
+}
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS — permite requisicoes do frontend React
@@ -135,3 +157,9 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
 }
+
+# Hardening minimo quando fora de desenvolvimento (staging/producao sob HTTPS).
+# Os cookies de sessao/CSRF (usados pelo admin Django) so trafegam via HTTPS.
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True

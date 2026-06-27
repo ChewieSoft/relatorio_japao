@@ -1,0 +1,21 @@
+# Contexto de build enxuto — backend Django.
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+staticfiles/
+*.sqlite3
+db.sqlite3
+.env
+.env.*
+.git/
+.gitignore
+*.md

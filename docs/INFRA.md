@@ -2,6 +2,16 @@
 
 > Referencia para Docker, deploy e problemas comuns. Para visao geral, ver [../CLAUDE.md](../CLAUDE.md).
 
+## Ambientes
+
+| Ambiente | Compose | Descricao |
+|----------|---------|-----------|
+| Desenvolvimento | `docker-compose.yml` (raiz) | Local: runserver + Vite dev + Postgres (ver abaixo) |
+| Staging | `infra/staging/docker-compose.yml` | `djr.jrcbrasil.net` no host kratos, via GitHub Actions (CI/CD). Ver [infra/staging/README.md](../infra/staging/README.md) |
+
+O staging usa imagens de producao (gunicorn + nginx) publicadas no GHCR e e entregue
+por um runner self-hosted. Pipeline em `.github/workflows/{ci,cd-staging}.yml`.
+
 ## Containers
 
 | Container | Imagem | Porta | Descricao |
