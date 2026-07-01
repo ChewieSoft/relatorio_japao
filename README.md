@@ -1,9 +1,32 @@
 # Relatório JRC Brasil
 
+> **Universidade Veiga de Almeida**
+>
+> Grupo: \
+> Alan Dias Da Silva - 1240211268 \
+> Eduardo Henrique Braga Da Silva - 1260115910 \
+> Felipe Dumar Batista - 1230103387 \
+> Gabriel Marques Dos Santos Silva - 1180104889 \
+> Ian Roanito Pereira Da Costa - 1240210067 \
+> Jorge Luis De Oliveira Ferrari - 1170103026 \
+> Karla Vitoria Fonseca Ferreira - 1240206621 \
+> Lucas Calvet Da Silva De Sousa - 1240112772 \
+> Matheus Farias De Oliveira - 1240112040 \
+> Matheus Oliveira Gomes - 1240205066 \
+> Paulo Carvalho Vieira Junior - 1240211360 \
+> Vinícius De Azevedo Lima E Souza - 1240201902
+
 Sistema web de compliance de TI para a JRC Brasil — gera e gerencia relatórios de auditoria de segurança da informação exigidos anualmente pela matriz japonesa.
 
-**Disciplina:** Laboratório de Desenvolvimento de Software
-**Status:** Em desenvolvimento
+**Disciplina:** Laboratório de Desenvolvimento de Software \
+**Documentação Final:** [Relatório JRC Brasil.pdf](./.github/Relatório_JRC_Brasil.pdf)
+
+<div style="text-align: center;">
+    <a href="./.github/Relatório_JRC_Brasil.pdf">
+        <img src="./.github/Pagina1.jpg" width="250" alt="Relatório JRC Brasil">
+    </a>
+</div>
+
 
 ## Problema
 
