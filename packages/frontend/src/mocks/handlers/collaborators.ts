@@ -45,7 +45,7 @@ function toDetail(record: (typeof data)[number]) {
     office: record.department,
     status: record.status,
     fired: record.fired,
-    date_hired: '2024-01-15T00:00:00Z',
+    date_hired: '2024-01-15',
     date_fired: null,
     perm_acess_internet: record.has_internet_access,
     acess_wifi: false,

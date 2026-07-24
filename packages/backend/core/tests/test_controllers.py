@@ -36,7 +36,7 @@ def _machine_payload(collaborator_id=None):
         'mac_address': 'AA:AA:AA:AA:AA:01',
         'administrator': 'TI',
         'cod_jdb': 'JDBN01',
-        'date_purchase': timezone.now().isoformat(),
+        'date_purchase': timezone.now().date().isoformat(),
         'quantity': 1,
     }
     if collaborator_id is not None:
@@ -81,7 +81,7 @@ class TestCollaboratorController:
             'full_name': 'New User',
             'domain_user': 'new.user',
             'status': True,
-            'date_hired': timezone.now().isoformat(),
+            'date_hired': timezone.now().date().isoformat(),
             'office': 'TI',
         }
         response = api_client.post('/api/collaborators/', data, format='json')

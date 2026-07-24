@@ -66,9 +66,9 @@ class BaseModel(models.Model):
 
 | # | Modelo | Campos | Unique |
 |---|--------|--------|--------|
-| 1 | **Collaborator** | full_name, domain_user, status (Bool), perm_acess_internet (Bool), date_hired (DateTime), fired (Bool), date_fired (DateTime?), acess_wifi (Bool), admin_privilege (Bool), office | full_name, domain_user |
-| 2 | **Machine** | hostname (?), model, type, service_tag, operacional_system, ram_memory, disk_memory, ip, mac_address, administrator, cod_jdb, date_purchase (DateTime), quantity (Int), crypto_disk (Bool), crypto_usb (Bool), crypto_memory_card (Bool), sold_out (Bool), date_sold_out (DateTime?) | service_tag, ip, mac_address |
-| 3 | **Software** | software_name (?), key, quantity (Int), type_licence, quantity_purchase (Int), last_purchase_date (DateTime), on_use (Int), departament, observation (Text), expires_at (DateTime?) | - |
+| 1 | **Collaborator** | full_name, domain_user, status (Bool), perm_acess_internet (Bool), date_hired (Date), fired (Bool), date_fired (Date?), acess_wifi (Bool), admin_privilege (Bool), office | full_name, domain_user |
+| 2 | **Machine** | hostname (?), model, type, service_tag, operacional_system, ram_memory, disk_memory, ip, mac_address, administrator, cod_jdb, date_purchase (Date), quantity (Int), crypto_disk (Bool), crypto_usb (Bool), crypto_memory_card (Bool), sold_out (Bool), date_sold_out (Date?) | service_tag, ip, mac_address |
+| 3 | **Software** | software_name (?), key, quantity (Int), type_licence, quantity_purchase (Int), last_purchase_date (Date), on_use (Int), departament, observation (Text), expires_at (Date?) | - |
 
 ### 9 Entidades Dependentes
 

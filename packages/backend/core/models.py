@@ -82,9 +82,9 @@ class Collaborator(BaseModel):
     domain_user = models.CharField(max_length=255, unique=True)
     status = models.BooleanField(default=True)
     perm_acess_internet = models.BooleanField(default=False)
-    date_hired = models.DateTimeField()
+    date_hired = models.DateField()
     fired = models.BooleanField(default=False)
-    date_fired = models.DateTimeField(null=True, blank=True)
+    date_fired = models.DateField(null=True, blank=True)
     acess_wifi = models.BooleanField(default=False)
     admin_privilege = models.BooleanField(default=False)
     office = models.CharField(max_length=100)
@@ -134,13 +134,13 @@ class Machine(BaseModel):
     mac_address = models.CharField(max_length=17, unique=True)
     administrator = models.CharField(max_length=255)
     cod_jdb = models.CharField(max_length=50)
-    date_purchase = models.DateTimeField()
+    date_purchase = models.DateField()
     quantity = models.IntegerField(default=1)
     crypto_disk = models.BooleanField(default=False)
     crypto_usb = models.BooleanField(default=False)
     crypto_memory_card = models.BooleanField(default=False)
     sold_out = models.BooleanField(default=False)
-    date_sold_out = models.DateTimeField(null=True, blank=True)
+    date_sold_out = models.DateField(null=True, blank=True)
 
     class Meta:
         ordering = ['model']
@@ -173,11 +173,11 @@ class Software(BaseModel):
     quantity = models.IntegerField(default=0)
     type_licence = models.CharField(max_length=50)
     quantity_purchase = models.IntegerField(default=0)
-    last_purchase_date = models.DateTimeField()
+    last_purchase_date = models.DateField()
     on_use = models.IntegerField(default=0)
     departament = models.CharField(max_length=100)
     observation = models.TextField(blank=True)
-    expires_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateField(null=True, blank=True)
 
     class Meta:
         ordering = ['software_name']

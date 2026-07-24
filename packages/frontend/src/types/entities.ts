@@ -232,8 +232,8 @@ export function toCollaboratorPayload(data: CollaboratorFormData): Record<string
     office: data.office,
     status: data.status,
     fired: data.fired,
-    date_hired: data.dateHired ? `${data.dateHired}T00:00:00Z` : null,
-    date_fired: data.fired && data.dateFired ? `${data.dateFired}T00:00:00Z` : null,
+    date_hired: data.dateHired || null,
+    date_fired: data.fired && data.dateFired ? data.dateFired : null,
     perm_acess_internet: data.permAcessInternet,
     acess_wifi: data.acessWifi,
     admin_privilege: data.adminPrivilege,
@@ -254,13 +254,13 @@ export function toMachinePayload(data: MachineFormData): Record<string, unknown>
     mac_address: data.macAddress,
     administrator: data.administrator,
     cod_jdb: data.codJdb,
-    date_purchase: data.datePurchase ? `${data.datePurchase}T00:00:00Z` : null,
+    date_purchase: data.datePurchase || null,
     quantity: data.quantity,
     crypto_disk: data.cryptoDisk,
     crypto_usb: data.cryptoUsb,
     crypto_memory_card: data.cryptoMemoryCard,
     sold_out: data.soldOut,
-    date_sold_out: data.soldOut && data.dateSoldOut ? `${data.dateSoldOut}T00:00:00Z` : null,
+    date_sold_out: data.soldOut && data.dateSoldOut ? data.dateSoldOut : null,
     collaborator_id: data.collaboratorId,
   }
 }
@@ -275,8 +275,8 @@ export function toSoftwarePayload(data: SoftwareFormData): Record<string, unknow
     quantity_purchase: data.quantityPurchase,
     on_use: data.onUse,
     departament: data.departament,
-    last_purchase_date: data.lastPurchaseDate ? `${data.lastPurchaseDate}T00:00:00Z` : null,
-    expires_at: data.typeLicence === 'subscription' && data.expiresAt ? `${data.expiresAt}T00:00:00Z` : null,
+    last_purchase_date: data.lastPurchaseDate || null,
+    expires_at: data.typeLicence === 'subscription' && data.expiresAt ? data.expiresAt : null,
     observation: data.observation,
   }
 }

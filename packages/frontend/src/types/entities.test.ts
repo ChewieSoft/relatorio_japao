@@ -233,9 +233,9 @@ describe('toCollaboratorPayload', () => {
     expect(payload.perm_acess_internet).toBe(true)
   })
 
-  it('formata datas com timezone UTC', () => {
+  it('envia date_hired como data pura YYYY-MM-DD (sem shift de timezone)', () => {
     const payload = toCollaboratorPayload(validCollaborator)
-    expect(payload.date_hired).toBe('2024-01-15T00:00:00Z')
+    expect(payload.date_hired).toBe('2024-01-15')
   })
 
   it('envia date_fired null quando não demitido', () => {
@@ -352,9 +352,9 @@ describe('toSoftwarePayload', () => {
     expect(payload.on_use).toBe(38)
   })
 
-  it('formata expires_at com UTC para subscription', () => {
+  it('envia expires_at como data pura YYYY-MM-DD para subscription', () => {
     const payload = toSoftwarePayload(validSoftware)
-    expect(payload.expires_at).toBe('2026-12-31T00:00:00Z')
+    expect(payload.expires_at).toBe('2026-12-31')
   })
 
   it('envia expires_at null para licença perpétua', () => {
@@ -392,6 +392,76 @@ describe('toSoftwareFormData', () => {
       type_licence: 'banana',
     })
     expect(form.typeLicence).toBe('')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Round-trip de datas de calendário (regressão do off-by-one de timezone)
+// ---------------------------------------------------------------------------
+
+describe('round-trip de datas de calendário (sem shift de timezone)', () => {
+  it('preserva date_hired e date_fired do colaborador ao ler e reenviar', () => {
+    const api = {
+      full_name: 'X',
+      domain_user: 'x',
+      office: 'TI',
+      status: true,
+      fired: true,
+      date_hired: '2026-07-23',
+      date_fired: '2026-08-01',
+      perm_acess_internet: false,
+      acess_wifi: false,
+      admin_privilege: false,
+    }
+    const payload = toCollaboratorPayload(toCollaboratorFormData(api))
+    expect(payload.date_hired).toBe('2026-07-23')
+    expect(payload.date_fired).toBe('2026-08-01')
+    expect(String(payload.date_hired)).not.toContain('T')
+  })
+
+  it('preserva date_purchase e date_sold_out da máquina ao ler e reenviar', () => {
+    const api = {
+      hostname: 'H',
+      model: 'M',
+      type: 'notebook',
+      service_tag: 'T',
+      operacional_system: 'W',
+      ram_memory: '8GB',
+      disk_memory: '256GB',
+      ip: '10.0.0.1',
+      mac_address: 'AA:BB:CC:DD:EE:01',
+      administrator: 'TI',
+      cod_jdb: 'J',
+      date_purchase: '2026-06-15',
+      quantity: 1,
+      crypto_disk: false,
+      crypto_usb: false,
+      crypto_memory_card: false,
+      sold_out: true,
+      date_sold_out: '2026-09-30',
+      collaborator_id: null,
+    }
+    const payload = toMachinePayload(toMachineFormData(api))
+    expect(payload.date_purchase).toBe('2026-06-15')
+    expect(payload.date_sold_out).toBe('2026-09-30')
+  })
+
+  it('preserva last_purchase_date e expires_at do software ao ler e reenviar', () => {
+    const api = {
+      software_name: 'S',
+      key: 'K',
+      type_licence: 'subscription',
+      quantity: 1,
+      quantity_purchase: 1,
+      on_use: 0,
+      departament: 'TI',
+      last_purchase_date: '2026-01-10',
+      expires_at: '2027-01-10',
+      observation: '',
+    }
+    const payload = toSoftwarePayload(toSoftwareFormData(api))
+    expect(payload.last_purchase_date).toBe('2026-01-10')
+    expect(payload.expires_at).toBe('2027-01-10')
   })
 })
 
