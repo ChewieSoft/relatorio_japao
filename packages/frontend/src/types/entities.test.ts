@@ -10,6 +10,7 @@ import {
   machineSchema,
   softwareSchema,
   toApiDate,
+  toCalendarDate,
   toCollaborator,
   toCollaboratorPayload,
   toCollaboratorFormData,
@@ -416,6 +417,13 @@ describe('toApiDate', () => {
     expect(toApiDate(undefined)).toBeNull()
   })
 
+  it('converte valores não-vazios porém malformados em null', () => {
+    expect(toApiDate(' ')).toBeNull()
+    expect(toApiDate('2024-1')).toBeNull()
+    expect(toApiDate('2024/01/15')).toBeNull()
+    expect(toApiDate('abc')).toBeNull()
+  })
+
   it('garante que os payloads nunca emitem data com T', () => {
     const payload = toCollaboratorPayload({
       ...validCollaborator,
@@ -427,6 +435,27 @@ describe('toApiDate', () => {
     expect(payload.date_fired).toBe('2024-01-10')
     expect(String(payload.date_hired)).not.toContain('T')
     expect(String(payload.date_fired)).not.toContain('T')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// toCalendarDate — espelho de leitura (corta hora, YYYY-MM-DD puro)
+// ---------------------------------------------------------------------------
+
+describe('toCalendarDate', () => {
+  it('mantém uma data pura YYYY-MM-DD', () => {
+    expect(toCalendarDate('2023-12-01')).toBe('2023-12-01')
+  })
+
+  it('descarta o componente de hora vindo da API', () => {
+    expect(toCalendarDate('2023-12-01T00:00:00Z')).toBe('2023-12-01')
+    expect(toCalendarDate('2026-07-23T03:00:00.000Z')).toBe('2026-07-23')
+  })
+
+  it('retorna "" para valores ausentes ou não-string', () => {
+    expect(toCalendarDate(null)).toBe('')
+    expect(toCalendarDate(undefined)).toBe('')
+    expect(toCalendarDate(123)).toBe('')
   })
 })
 

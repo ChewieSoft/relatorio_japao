@@ -67,6 +67,21 @@ describe('CollaboratorForm', () => {
     expect(ativo).toBeDisabled()
   })
 
+  it('força "Ativo" desmarcado ao carregar registro já desligado (status legado true)', () => {
+    // Registro desligado que traz status=true (dado legado inconsistente):
+    // a invariante deve ser aplicada já no carregamento, não só no toggle.
+    const firedLegacy: CollaboratorFormData = {
+      ...editData,
+      fired: true,
+      status: true,
+      dateFired: '2024-03-01',
+    }
+    renderForm({ initialData: firedLegacy })
+    const ativo = screen.getByLabelText('Ativo')
+    expect(ativo).not.toBeChecked()
+    expect(ativo).toBeDisabled()
+  })
+
   it('envia status=false ao salvar com "Desligado" ligado', async () => {
     const { onSave } = renderForm()
     fireEvent.change(screen.getByLabelText('Nome Completo'), { target: { value: 'Ana Souza' } })

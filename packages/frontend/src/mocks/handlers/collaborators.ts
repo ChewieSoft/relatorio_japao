@@ -46,7 +46,7 @@ function toDetail(record: (typeof data)[number]) {
     status: record.status,
     fired: record.fired,
     date_hired: record.date_hired,
-    date_fired: null,
+    date_fired: record.date_fired,
     perm_acess_internet: record.has_internet_access,
     acess_wifi: false,
     admin_privilege: false,
@@ -127,6 +127,7 @@ export const collaboratorsHandlers = [
       status,
       fired,
       date_hired: (body.date_hired ?? '') as string,
+      date_fired: (body.date_fired ?? null) as string | null,
       has_server_access: false,
       has_erp_access: false,
       has_internet_access: (body.perm_acess_internet ?? false) as boolean,
@@ -179,7 +180,8 @@ export const collaboratorsHandlers = [
       department: body.office as string,
       status,
       fired,
-      date_hired: body.date_hired as string,
+      date_hired: (body.date_hired ?? '') as string,
+      date_fired: (body.date_fired ?? null) as string | null,
       has_internet_access: body.perm_acess_internet as boolean,
     }
 

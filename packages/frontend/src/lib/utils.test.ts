@@ -47,4 +47,17 @@ describe('formatDateBR', () => {
     expect(formatDateBR('2023-13-40')).toBe('')
     expect(formatDateBR('abc')).toBe('')
   })
+
+  it('retorna string vazia para dia impossível no mês', () => {
+    expect(formatDateBR('2023-02-30')).toBe('')
+    expect(formatDateBR('2023-04-31')).toBe('')
+    expect(formatDateBR('2023-01-00')).toBe('')
+    expect(formatDateBR('2023-01-32')).toBe('')
+  })
+
+  it('respeita anos bissextos ao validar 29 de fevereiro', () => {
+    expect(formatDateBR('2024-02-29')).toBe('29/fev/2024')
+    expect(formatDateBR('2023-02-29')).toBe('')
+    expect(formatDateBR('2023-02-28')).toBe('28/fev/2023')
+  })
 })

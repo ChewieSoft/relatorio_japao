@@ -72,8 +72,8 @@ class Collaborator(BaseModel):
             (fired=True), pois um colaborador desligado e sempre inativo.
         perm_acess_internet: Permissao de acesso a internet.
         date_hired: Data de contratacao.
-        fired: Se o colaborador foi demitido.
-        date_fired: Data de demissao (null se ativo).
+        fired: Se o colaborador foi desligado.
+        date_fired: Data de desligamento (null quando ativo).
         acess_wifi: Acesso a rede WiFi.
         admin_privilege: Privilegio de administrador.
         office: Departamento/escritorio do colaborador.
