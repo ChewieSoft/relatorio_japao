@@ -1,8 +1,8 @@
 # Configuracao do projeto Jira para a skill `ticket`.
 # Origem: definido pelo time JRC Brasil (projeto Digital Japan Report).
 # PROJECT/BRANCH_PREFIX = chave do projeto; BOARD = id do quadro (acli jira board search --project DJR);
-# BASE_BRANCH = base de branches e PRs (este repo usa main, nao develop).
+# BASE_BRANCH = base de branches e PRs (este repo usa staging como base de integracao).
 PROJECT=DJR
 BOARD=9
 BRANCH_PREFIX=DJR
-BASE_BRANCH=main
+BASE_BRANCH=staging
