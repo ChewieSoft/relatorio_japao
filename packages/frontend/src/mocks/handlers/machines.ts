@@ -65,7 +65,7 @@ function toDetail(record: (typeof data)[number]) {
     mac_address: record.mac_address,
     administrator: 'TI',
     cod_jdb: `JDB-${String(record.id).padStart(3, '0')}`,
-    date_purchase: '2024-06-15T00:00:00Z',
+    date_purchase: '2024-06-15',
     quantity: 1,
     crypto_disk: record.encrypted,
     crypto_usb: false,

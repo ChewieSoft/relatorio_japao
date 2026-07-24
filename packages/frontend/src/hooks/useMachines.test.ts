@@ -35,7 +35,7 @@ const mockDetailResponse = {
     id: 1, hostname: 'JRC-TI-001', model: 'Dell 7090', type: 'desktop',
     service_tag: 'ABC', operacional_system: 'Win11', ram_memory: '16GB',
     disk_memory: '512GB', ip: '192.168.1.1', mac_address: 'AA:BB:CC:DD:EE:01',
-    administrator: 'TI', cod_jdb: 'JDB-001', date_purchase: '2024-06-15T00:00:00Z',
+    administrator: 'TI', cod_jdb: 'JDB-001', date_purchase: '2024-06-15',
     quantity: 1, crypto_disk: true, crypto_usb: false, crypto_memory_card: false,
     sold_out: false, date_sold_out: null,
   },
