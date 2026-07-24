@@ -116,13 +116,16 @@ export const collaboratorsHandlers = [
 
     const id = nextId++
     const now = new Date().toISOString()
+    // Invariante de negocio: colaborador desligado e sempre inativo.
+    const fired = (body.fired ?? false) as boolean
+    const status = fired ? false : ((body.status ?? true) as boolean)
     const newRecord = {
       id,
       name: body.full_name as string,
       domain_user: body.domain_user as string,
       department: body.office as string,
-      status: (body.status ?? true) as boolean,
-      fired: (body.fired ?? false) as boolean,
+      status,
+      fired,
       date_hired: (body.date_hired ?? '') as string,
       has_server_access: false,
       has_erp_access: false,
@@ -138,8 +141,8 @@ export const collaboratorsHandlers = [
         full_name: body.full_name,
         domain_user: body.domain_user,
         office: body.office,
-        status: body.status ?? true,
-        fired: body.fired ?? false,
+        status,
+        fired,
         date_hired: body.date_hired,
         date_fired: body.date_fired ?? null,
         perm_acess_internet: body.perm_acess_internet ?? false,
@@ -166,13 +169,16 @@ export const collaboratorsHandlers = [
     }
 
     const body = (await request.json()) as Record<string, unknown>
+    // Invariante de negocio: colaborador desligado e sempre inativo.
+    const fired = body.fired as boolean
+    const status = fired ? false : (body.status as boolean)
     data[idx] = {
       ...data[idx],
       name: body.full_name as string,
       domain_user: body.domain_user as string,
       department: body.office as string,
-      status: body.status as boolean,
-      fired: body.fired as boolean,
+      status,
+      fired,
       date_hired: body.date_hired as string,
       has_internet_access: body.perm_acess_internet as boolean,
     }
@@ -182,8 +188,8 @@ export const collaboratorsHandlers = [
       full_name: body.full_name,
       domain_user: body.domain_user,
       office: body.office,
-      status: body.status,
-      fired: body.fired,
+      status,
+      fired,
       date_hired: body.date_hired,
       date_fired: body.date_fired ?? null,
       perm_acess_internet: body.perm_acess_internet ?? false,

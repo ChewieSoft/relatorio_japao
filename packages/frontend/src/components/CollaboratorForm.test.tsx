@@ -55,7 +55,29 @@ describe('CollaboratorForm', () => {
 
   it('não renderiza campo dateFired quando fired=false', () => {
     renderForm()
-    expect(screen.queryByLabelText('Data de Demissão')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Data de Desligamento')).not.toBeInTheDocument()
+  })
+
+  it('desliga e desabilita "Ativo" ao ligar "Desligado"', () => {
+    renderForm()
+    const ativo = screen.getByLabelText('Ativo')
+    expect(ativo).toBeChecked()
+    fireEvent.click(screen.getByLabelText('Desligado'))
+    expect(ativo).not.toBeChecked()
+    expect(ativo).toBeDisabled()
+  })
+
+  it('envia status=false ao salvar com "Desligado" ligado', async () => {
+    const { onSave } = renderForm()
+    fireEvent.change(screen.getByLabelText('Nome Completo'), { target: { value: 'Ana Souza' } })
+    fireEvent.change(screen.getByLabelText('Usuário de Domínio'), { target: { value: 'ana.souza' } })
+    fireEvent.change(screen.getByLabelText('Departamento'), { target: { value: 'TI' } })
+    fireEvent.change(screen.getByLabelText('Data de Contratação'), { target: { value: '2024-01-10' } })
+    fireEvent.click(screen.getByLabelText('Desligado'))
+    fireEvent.change(screen.getByLabelText('Data de Desligamento'), { target: { value: '2024-02-01' } })
+    fireEvent.click(screen.getByRole('button', { name: /salvar/i }))
+    await waitFor(() => expect(onSave).toHaveBeenCalled())
+    expect(onSave.mock.calls[0][0]).toMatchObject({ fired: true, status: false })
   })
 
   it('desabilita botão Salvar quando isLoading=true', () => {
