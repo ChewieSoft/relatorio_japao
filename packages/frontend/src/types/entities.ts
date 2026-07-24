@@ -16,6 +16,8 @@ export interface Collaborator {
   department: string
   status: boolean
   fired: boolean
+  /** Data de contratação no formato ISO YYYY-MM-DD (data de calendário, sem hora). */
+  dateHired: string
   hasServerAccess: boolean
   hasErpAccess: boolean
   hasInternetAccess: boolean
@@ -224,6 +226,21 @@ export const softwareSchema = z.object({
 // Mapping helpers — camelCase (form) ↔ snake_case (API)
 // ---------------------------------------------------------------------------
 
+/**
+ * Normaliza um valor de data para a data de calendário pura `YYYY-MM-DD` da API.
+ *
+ * Trava o contrato dos campos `DateField` do backend (DRF só aceita ISO
+ * `YYYY-MM-DD`): remove qualquer componente de hora (`T…Z`) e converte vazio
+ * em `null`. É a blindagem que impede o erro "Formato inválido para data" mesmo
+ * que algum valor volte a carregar hora (build antigo, resposta com datetime).
+ *
+ * @param value - Data do formulário (`YYYY-MM-DD`, `YYYY-MM-DDTHH:mm:ssZ`, `''`, null).
+ * @returns Data pura `YYYY-MM-DD`, ou `null` quando vazia/ausente.
+ */
+export function toApiDate(value: string | null | undefined): string | null {
+  return value ? value.slice(0, 10) || null : null
+}
+
 /** Converte dados do formulário de colaborador para payload snake_case da API. */
 export function toCollaboratorPayload(data: CollaboratorFormData): Record<string, unknown> {
   return {
@@ -232,8 +249,8 @@ export function toCollaboratorPayload(data: CollaboratorFormData): Record<string
     office: data.office,
     status: data.status,
     fired: data.fired,
-    date_hired: data.dateHired || null,
-    date_fired: data.fired && data.dateFired ? data.dateFired : null,
+    date_hired: toApiDate(data.dateHired),
+    date_fired: data.fired ? toApiDate(data.dateFired) : null,
     perm_acess_internet: data.permAcessInternet,
     acess_wifi: data.acessWifi,
     admin_privilege: data.adminPrivilege,
@@ -254,13 +271,13 @@ export function toMachinePayload(data: MachineFormData): Record<string, unknown>
     mac_address: data.macAddress,
     administrator: data.administrator,
     cod_jdb: data.codJdb,
-    date_purchase: data.datePurchase || null,
+    date_purchase: toApiDate(data.datePurchase),
     quantity: data.quantity,
     crypto_disk: data.cryptoDisk,
     crypto_usb: data.cryptoUsb,
     crypto_memory_card: data.cryptoMemoryCard,
     sold_out: data.soldOut,
-    date_sold_out: data.soldOut && data.dateSoldOut ? data.dateSoldOut : null,
+    date_sold_out: data.soldOut ? toApiDate(data.dateSoldOut) : null,
     collaborator_id: data.collaboratorId,
   }
 }
@@ -275,8 +292,8 @@ export function toSoftwarePayload(data: SoftwareFormData): Record<string, unknow
     quantity_purchase: data.quantityPurchase,
     on_use: data.onUse,
     departament: data.departament,
-    last_purchase_date: data.lastPurchaseDate || null,
-    expires_at: data.typeLicence === 'subscription' && data.expiresAt ? data.expiresAt : null,
+    last_purchase_date: toApiDate(data.lastPurchaseDate),
+    expires_at: data.typeLicence === 'subscription' ? toApiDate(data.expiresAt) : null,
     observation: data.observation,
   }
 }
@@ -399,6 +416,7 @@ export function toCollaborator(raw: Record<string, unknown>): Collaborator {
     department: str(raw.department),
     status: bool(raw.status),
     fired: bool(raw.fired),
+    dateHired: str(raw.date_hired).slice(0, 10),
     hasServerAccess: bool(raw.has_server_access),
     hasErpAccess: bool(raw.has_erp_access),
     hasInternetAccess: bool(raw.has_internet_access),

@@ -36,6 +36,41 @@ contratação, que recuava um dia a cada salvamento.
   + round-trip dos transforms no frontend (vitest, `src/types/entities.test.ts`)
   + mock MSW alinhado a `YYYY-MM-DD` (para não esconder mais a classe do bug).
 
+## Seguimento (2026-07-24) — erro residual do datepicker e exibição BR
+
+- **Sintoma reportado**: ao salvar pelo datepicker, o campo mostrava
+  "Formato inválido para data. Use um dos formatos a seguir: YYYY-MM-DD.".
+  Essa string é o erro embutido do DRF `DateField` (i18n pt-BR), devolvido em
+  `400` e pintado no campo via `serverErrors`. Só dispara quando um valor **com
+  hora** (`T…Z`) chega a um `DateField`.
+- **Causa-raiz**: o código já commitado envia data pura; o erro vinha de um
+  **build antigo do frontend** (ainda carimbava `T00:00:00Z`) rodando contra o
+  backend já migrado para `DateField`. Correção do sintoma = **rebuild** do
+  frontend.
+- **Blindagem de contrato** (`para evitar problemas`): `toApiDate()` em
+  `src/types/entities.ts` reduz qualquer valor a `YYYY-MM-DD` puro (ou `null`)
+  nos 3 payload builders — impede a recorrência estruturalmente.
+- **Exibição brasileira**: `formatDateBR()` em `src/lib/utils.ts` formata como
+  `DD/mmm/YYYY` (ex.: `01/dez/2023`), à prova de timezone (parse por split, sem
+  `new Date()`). Aplicada na coluna "Contratação" (Colaboradores) e "Expira em"
+  (Software). O campo **editável** segue `<input type="date">` nativo (numérico
+  `DD/MM/YYYY`, como na foto do chamado). Para expor a data na listagem,
+  `CollaboratorListSerializer` passou a incluir `date_hired`.
+- **Proxy de dev**: `vite.config.ts` ganhou `server.proxy['/api'] →
+  http://localhost:8000` (configurável via `VITE_DEV_API_PROXY`), casando com
+  `VITE_API_URL=/api` do `.env` e tornando `npm run dev`/e2e same-origin.
+- **Testes adicionados**: `toApiDate`/`formatDateBR` (vitest), rejeição de data
+  com hora no backend (`test_date_fields.py`) e **e2e Playwright**
+  (`tests/collaborator-date.spec.ts`: login → Leonardo Ribas → `01/dez/2023` →
+  salva sem erro → coluna mostra `01/dez/2023` → reabre sem recuar um dia).
+
+## Decisões resolvidas (formato de datas)
+
+- **API/armazenamento**: sempre `YYYY-MM-DD` puro (contrato `DateField`).
+- **Entrada (edição)**: `<input type="date">` nativo → exibe `DD/MM/YYYY` em
+  pt-BR (nativo não renderiza mês abreviado).
+- **Exibição (somente leitura)**: `DD/mmm/YYYY` via `formatDateBR`.
+
 ## 🚩 Open Questions
 
 - **Reparo de dados históricos** já deslocados pelo bug: não feito (staging

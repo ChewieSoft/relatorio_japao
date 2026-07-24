@@ -184,6 +184,38 @@ class TestMachineDateRoundTrip:
 
 
 @pytest.mark.django_db
+class TestDateFieldRejectsDatetime:
+    """Contrato ISO: o DateField recusa valores com componente de hora.
+
+    Documenta e trava exatamente a falha do chamado DJR-176: enviar uma data
+    carimbada com hora (ex.: '2026-07-23T00:00:00Z') a um DateField faz o DRF
+    responder 400 com a mensagem 'Formato inválido para data. Use um dos
+    formatos a seguir: YYYY-MM-DD.'. A blindagem no frontend (toApiDate) impede
+    que esse valor chegue aqui; este teste garante que o backend permanece
+    estrito quanto ao contrato YYYY-MM-DD puro.
+    """
+
+    def test_hire_date_with_time_component_is_rejected(self, api_client):
+        """POST com date_hired contendo hora deve retornar 400 no campo."""
+        response = api_client.post(
+            '/api/collaborators/',
+            _collaborator_payload(date_hired='2026-07-23T00:00:00Z'),
+            format='json',
+        )
+        assert response.status_code == 400
+        assert 'date_hired' in response.data
+
+    def test_bare_hire_date_is_accepted(self, api_client):
+        """Contraprova: a mesma data pura YYYY-MM-DD é aceita (201)."""
+        response = api_client.post(
+            '/api/collaborators/',
+            _collaborator_payload(date_hired='2026-07-23'),
+            format='json',
+        )
+        assert response.status_code == 201
+
+
+@pytest.mark.django_db
 class TestSoftwareDateRoundTrip:
     """Round-trip das datas de Software (ultima compra e expiracao)."""
 

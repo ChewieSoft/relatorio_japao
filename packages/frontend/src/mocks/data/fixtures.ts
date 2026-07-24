@@ -8,14 +8,14 @@
 
 /** Colaboradores mock no formato da API (snake_case). */
 export const collaborators = [
-  { id: 1, name: "Carlos Tanaka", domain_user: "ctanaka", department: "Engenharia", status: true, fired: false, has_server_access: true, has_erp_access: true, has_internet_access: true, has_cellphone: true, email: "ctanaka@jrcbrasil.com" },
-  { id: 2, name: "Maria Suzuki", domain_user: "msuzuki", department: "Financeiro", status: true, fired: false, has_server_access: false, has_erp_access: true, has_internet_access: true, has_cellphone: false, email: "msuzuki@jrcbrasil.com" },
-  { id: 3, name: "Roberto Yamamoto", domain_user: "ryamamoto", department: "TI", status: true, fired: false, has_server_access: true, has_erp_access: true, has_internet_access: true, has_cellphone: true, email: "ryamamoto@jrcbrasil.com" },
-  { id: 4, name: "Ana Watanabe", domain_user: "awatanabe", department: "RH", status: true, fired: false, has_server_access: false, has_erp_access: true, has_internet_access: true, has_cellphone: false, email: "awatanabe@jrcbrasil.com" },
-  { id: 5, name: "Pedro Nakamura", domain_user: "pnakamura", department: "Produção", status: false, fired: false, has_server_access: false, has_erp_access: false, has_internet_access: false, has_cellphone: false, email: "pnakamura@jrcbrasil.com" },
-  { id: 6, name: "Fernanda Sato", domain_user: "fsato", department: "Comercial", status: true, fired: false, has_server_access: false, has_erp_access: true, has_internet_access: true, has_cellphone: true, email: "fsato@jrcbrasil.com" },
-  { id: 7, name: "Lucas Hayashi", domain_user: "lhayashi", department: "TI", status: true, fired: false, has_server_access: true, has_erp_access: true, has_internet_access: true, has_cellphone: true, email: "lhayashi@jrcbrasil.com" },
-  { id: 8, name: "Juliana Kimura", domain_user: "jkimura", department: "Qualidade", status: true, fired: false, has_server_access: false, has_erp_access: false, has_internet_access: true, has_cellphone: false, email: "jkimura@jrcbrasil.com" },
+  { id: 1, name: "Carlos Tanaka", domain_user: "ctanaka", department: "Engenharia", status: true, fired: false, date_hired: "2019-03-04", has_server_access: true, has_erp_access: true, has_internet_access: true, has_cellphone: true, email: "ctanaka@jrcbrasil.com" },
+  { id: 2, name: "Maria Suzuki", domain_user: "msuzuki", department: "Financeiro", status: true, fired: false, date_hired: "2020-07-15", has_server_access: false, has_erp_access: true, has_internet_access: true, has_cellphone: false, email: "msuzuki@jrcbrasil.com" },
+  { id: 3, name: "Roberto Yamamoto", domain_user: "ryamamoto", department: "TI", status: true, fired: false, date_hired: "2018-11-01", has_server_access: true, has_erp_access: true, has_internet_access: true, has_cellphone: true, email: "ryamamoto@jrcbrasil.com" },
+  { id: 4, name: "Ana Watanabe", domain_user: "awatanabe", department: "RH", status: true, fired: false, date_hired: "2021-01-20", has_server_access: false, has_erp_access: true, has_internet_access: true, has_cellphone: false, email: "awatanabe@jrcbrasil.com" },
+  { id: 5, name: "Pedro Nakamura", domain_user: "pnakamura", department: "Produção", status: false, fired: false, date_hired: "2017-05-09", has_server_access: false, has_erp_access: false, has_internet_access: false, has_cellphone: false, email: "pnakamura@jrcbrasil.com" },
+  { id: 6, name: "Fernanda Sato", domain_user: "fsato", department: "Comercial", status: true, fired: false, date_hired: "2022-02-14", has_server_access: false, has_erp_access: true, has_internet_access: true, has_cellphone: true, email: "fsato@jrcbrasil.com" },
+  { id: 7, name: "Lucas Hayashi", domain_user: "lhayashi", department: "TI", status: true, fired: false, date_hired: "2023-08-28", has_server_access: true, has_erp_access: true, has_internet_access: true, has_cellphone: true, email: "lhayashi@jrcbrasil.com" },
+  { id: 8, name: "Juliana Kimura", domain_user: "jkimura", department: "Qualidade", status: true, fired: false, date_hired: "2020-10-05", has_server_access: false, has_erp_access: false, has_internet_access: true, has_cellphone: false, email: "jkimura@jrcbrasil.com" },
 ]
 
 /** Máquinas mock no formato da API (snake_case). */

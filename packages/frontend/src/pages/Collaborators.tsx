@@ -15,6 +15,7 @@ import { TableSkeleton, TableError, TableEmpty, TablePagination } from "@/compon
 import { useCollaborators, useCollaborator, useCreateCollaborator, useUpdateCollaborator, useDeleteCollaborator } from "@/hooks/useCollaborators";
 import { useCrudPage } from "@/hooks/useCrudPage";
 import type { CollaboratorFormData } from "@/types/entities";
+import { formatDateBR } from "@/lib/utils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Check, X, Plus, Pencil, Trash2 } from "lucide-react";
@@ -78,6 +79,7 @@ const Collaborators = () => {
                   <TableHead>Nome</TableHead>
                   <TableHead>Domínio</TableHead>
                   <TableHead>Departamento</TableHead>
+                  <TableHead>Contratação</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-center">Servidor</TableHead>
                   <TableHead className="text-center">ERP</TableHead>
@@ -92,6 +94,7 @@ const Collaborators = () => {
                     <TableCell className="font-medium">{c.name}</TableCell>
                     <TableCell className="text-muted-foreground font-mono text-xs">{c.domainUser}</TableCell>
                     <TableCell>{c.department}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{formatDateBR(c.dateHired) || "—"}</TableCell>
                     <TableCell><StatusBadge status={c.status ? "active" : "inactive"} /></TableCell>
                     <TableCell className="text-center"><BoolIcon value={c.hasServerAccess} /></TableCell>
                     <TableCell className="text-center"><BoolIcon value={c.hasErpAccess} /></TableCell>

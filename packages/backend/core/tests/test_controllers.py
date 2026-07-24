@@ -62,8 +62,8 @@ class TestCollaboratorController:
         item = response.data['results'][0]
         expected_fields = {
             'id', 'name', 'domain_user', 'department', 'status', 'fired',
-            'has_server_access', 'has_erp_access', 'has_internet_access',
-            'has_cellphone', 'email',
+            'date_hired', 'has_server_access', 'has_erp_access',
+            'has_internet_access', 'has_cellphone', 'email',
         }
         assert set(item.keys()) == expected_fields
 
