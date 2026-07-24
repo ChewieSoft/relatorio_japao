@@ -9,6 +9,7 @@ import {
   collaboratorSchema,
   machineSchema,
   softwareSchema,
+  toApiDate,
   toCollaborator,
   toCollaboratorPayload,
   toCollaboratorFormData,
@@ -396,6 +397,40 @@ describe('toSoftwareFormData', () => {
 })
 
 // ---------------------------------------------------------------------------
+// toApiDate — blindagem da fronteira (sempre YYYY-MM-DD puro ou null)
+// ---------------------------------------------------------------------------
+
+describe('toApiDate', () => {
+  it('mantém uma data pura YYYY-MM-DD', () => {
+    expect(toApiDate('2023-12-01')).toBe('2023-12-01')
+  })
+
+  it('remove o componente de hora (não deixa vazar T…Z para o DateField)', () => {
+    expect(toApiDate('2023-12-01T00:00:00Z')).toBe('2023-12-01')
+    expect(toApiDate('2026-07-23T03:00:00.000Z')).toBe('2026-07-23')
+  })
+
+  it('converte vazio, null e undefined em null', () => {
+    expect(toApiDate('')).toBeNull()
+    expect(toApiDate(null)).toBeNull()
+    expect(toApiDate(undefined)).toBeNull()
+  })
+
+  it('garante que os payloads nunca emitem data com T', () => {
+    const payload = toCollaboratorPayload({
+      ...validCollaborator,
+      dateHired: '2023-12-01T00:00:00Z',
+      fired: true,
+      dateFired: '2024-01-10T00:00:00Z',
+    })
+    expect(payload.date_hired).toBe('2023-12-01')
+    expect(payload.date_fired).toBe('2024-01-10')
+    expect(String(payload.date_hired)).not.toContain('T')
+    expect(String(payload.date_fired)).not.toContain('T')
+  })
+})
+
+// ---------------------------------------------------------------------------
 // Round-trip de datas de calendário (regressão do off-by-one de timezone)
 // ---------------------------------------------------------------------------
 
@@ -478,6 +513,7 @@ describe('toCollaborator (list mapper)', () => {
       department: 'TI',
       status: true,
       fired: false,
+      date_hired: '2019-03-04',
       has_server_access: true,
       has_erp_access: false,
       has_internet_access: true,
@@ -488,6 +524,7 @@ describe('toCollaborator (list mapper)', () => {
     expect(result.id).toBe(1)
     expect(result.name).toBe('Carlos')
     expect(result.domainUser).toBe('ctanaka')
+    expect(result.dateHired).toBe('2019-03-04')
     expect(result.hasServerAccess).toBe(true)
   })
 
@@ -496,6 +533,7 @@ describe('toCollaborator (list mapper)', () => {
     expect(result.name).toBe('')
     expect(result.domainUser).toBe('')
     expect(result.department).toBe('')
+    expect(result.dateHired).toBe('')
     expect(result.status).toBe(false)
     expect(result.fired).toBe(false)
     expect(result.hasServerAccess).toBe(false)

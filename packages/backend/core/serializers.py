@@ -48,6 +48,7 @@ class CollaboratorListSerializer(serializers.ModelSerializer):
     Mapeia campos do modelo para o contrato MSW:
     name←full_name, department←office, has_internet_access←perm_acess_internet.
     Campos computed: has_server_access, has_erp_access, has_cellphone, email.
+    Expõe date_hired (DateField, YYYY-MM-DD) para a coluna "Contratação" da tabela.
     """
 
     name = serializers.CharField(source='full_name', read_only=True)
@@ -62,8 +63,8 @@ class CollaboratorListSerializer(serializers.ModelSerializer):
         model = Collaborator
         fields = [
             'id', 'name', 'domain_user', 'department', 'status', 'fired',
-            'has_server_access', 'has_erp_access', 'has_internet_access',
-            'has_cellphone', 'email',
+            'date_hired', 'has_server_access', 'has_erp_access',
+            'has_internet_access', 'has_cellphone', 'email',
         ]
 
     def get_has_server_access(self, obj):

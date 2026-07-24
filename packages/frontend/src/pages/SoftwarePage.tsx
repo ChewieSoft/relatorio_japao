@@ -15,6 +15,7 @@ import { useSoftware, useSoftwareDetail, useCreateSoftware, useUpdateSoftware, u
 import { useCrudPage } from "@/hooks/useCrudPage";
 import type { SoftwareFormData } from "@/types/entities";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatDateBR } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -106,7 +107,7 @@ const SoftwarePage = () => {
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {s.expiresAt || "—"}
+                        {formatDateBR(s.expiresAt) || "—"}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
