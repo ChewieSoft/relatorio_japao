@@ -34,7 +34,7 @@ const mockDetailResponse = {
   data: {
     id: 1, software_name: 'Office 365', key: 'XXXXX', type_licence: 'subscription',
     quantity: 50, quantity_purchase: 50, on_use: 38, departament: 'TI',
-    last_purchase_date: '2024-01-01T00:00:00Z', expires_at: '2026-12-31T00:00:00Z',
+    last_purchase_date: '2024-01-01', expires_at: '2026-12-31',
     observation: '',
   },
 }

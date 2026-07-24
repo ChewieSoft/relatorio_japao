@@ -37,7 +37,7 @@ const mockListResponse = {
 const mockDetailResponse = {
   data: {
     id: 1, full_name: 'Carlos Tanaka', domain_user: 'ctanaka', office: 'TI',
-    status: true, fired: false, date_hired: '2024-01-15T00:00:00Z', date_fired: null,
+    status: true, fired: false, date_hired: '2024-01-15', date_fired: null,
     perm_acess_internet: true, acess_wifi: false, admin_privilege: false,
   },
 }

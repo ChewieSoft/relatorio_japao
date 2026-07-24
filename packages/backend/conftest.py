@@ -78,7 +78,7 @@ def collaborator(db):
         domain_user='test.user',
         status=True,
         perm_acess_internet=True,
-        date_hired=timezone.now(),
+        date_hired=timezone.now().date(),
         fired=False,
         office='TI',
     )
@@ -103,7 +103,7 @@ def machine(db):
         mac_address='FF:FF:FF:FF:FF:01',
         administrator='Test Admin',
         cod_jdb='JDBT01',
-        date_purchase=timezone.now(),
+        date_purchase=timezone.now().date(),
         crypto_disk=True,
         crypto_usb=False,
         crypto_memory_card=False,
@@ -123,8 +123,8 @@ def software(db):
         quantity=10,
         type_licence='subscription',
         quantity_purchase=10,
-        last_purchase_date=timezone.now(),
+        last_purchase_date=timezone.now().date(),
         on_use=5,
         departament='TI',
-        expires_at=timezone.now() + timedelta(days=365),
+        expires_at=(timezone.now() + timedelta(days=365)).date(),
     )

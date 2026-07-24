@@ -152,6 +152,36 @@ class TestMachineDateRoundTrip:
         assert detail.data['date_purchase'] == PURCHASE_DATE
         assert detail.data['date_sold_out'] == SOLD_OUT_DATE
 
+    def test_purchase_dates_do_not_drift_on_resave_loop(self, api_client):
+        """Reabrir e salvar a maquina nao pode recuar date_purchase/date_sold_out.
+
+        Mesmo mecanismo do bug do chamado, aplicado a compra e baixa da
+        maquina: le as datas da API e as reenvia no save, repetidamente.
+        Antes da correcao a data recuava um dia por ciclo; agora deve
+        permanecer estavel.
+        """
+        machine_id = api_client.post(
+            '/api/machines/', _machine_payload(), format='json'
+        ).data['id']
+
+        for _ in range(3):
+            current = api_client.get(f'/api/machines/{machine_id}/').data
+            assert current['date_purchase'] == PURCHASE_DATE
+            assert current['date_sold_out'] == SOLD_OUT_DATE
+            resave = api_client.put(
+                f'/api/machines/{machine_id}/',
+                _machine_payload(
+                    date_purchase=current['date_purchase'],
+                    date_sold_out=current['date_sold_out'],
+                ),
+                format='json',
+            )
+            assert resave.status_code == 200
+
+        final = api_client.get(f'/api/machines/{machine_id}/').data
+        assert final['date_purchase'] == PURCHASE_DATE
+        assert final['date_sold_out'] == SOLD_OUT_DATE
+
 
 @pytest.mark.django_db
 class TestSoftwareDateRoundTrip:
@@ -167,3 +197,32 @@ class TestSoftwareDateRoundTrip:
         detail = api_client.get(f"/api/software/{create.data['id']}/")
         assert detail.data['last_purchase_date'] == LAST_PURCHASE_DATE
         assert detail.data['expires_at'] == EXPIRES_DATE
+
+    def test_dates_do_not_drift_on_resave_loop(self, api_client):
+        """Reabrir e salvar o software nao pode recuar as datas.
+
+        Le last_purchase_date e expires_at da API e os reenvia no save,
+        repetidamente, garantindo que a licenca mantem as datas estaveis
+        apos a correcao (DateField + YYYY-MM-DD puro).
+        """
+        software_id = api_client.post(
+            '/api/software/', _software_payload(), format='json'
+        ).data['id']
+
+        for _ in range(3):
+            current = api_client.get(f'/api/software/{software_id}/').data
+            assert current['last_purchase_date'] == LAST_PURCHASE_DATE
+            assert current['expires_at'] == EXPIRES_DATE
+            resave = api_client.put(
+                f'/api/software/{software_id}/',
+                _software_payload(
+                    last_purchase_date=current['last_purchase_date'],
+                    expires_at=current['expires_at'],
+                ),
+                format='json',
+            )
+            assert resave.status_code == 200
+
+        final = api_client.get(f'/api/software/{software_id}/').data
+        assert final['last_purchase_date'] == LAST_PURCHASE_DATE
+        assert final['expires_at'] == EXPIRES_DATE
