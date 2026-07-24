@@ -108,6 +108,20 @@ class CollaboratorService(BaseService):
         self.collaborator_software_repo = CollaboratorSoftwareRepository()
         self.collaborator_machine_repo = CollaboratorMachineRepository()
 
+    def _apply_fired_invariant(self, data):
+        """Garante a invariante de negocio: colaborador desligado e inativo.
+
+        Se 'fired' for verdadeiro no payload, forca status=False para manter
+        dados consistentes entre dashboard, get_active e relatorios de
+        compliance. Adiciona 'status' ao dict recebido, garantindo que o campo
+        seja persistido inclusive em updates parciais (update_fields).
+
+        Args:
+            data: Dicionario de campos do colaborador (mutado in-place).
+        """
+        if data.get('fired'):
+            data['status'] = False
+
     @transaction.atomic
     def create(self, data):
         """Cria colaborador com emails e relacoes N:N em uma transacao.
@@ -124,6 +138,7 @@ class CollaboratorService(BaseService):
         emails_data = data.pop('emails', [])
         software_ids = data.pop('software_ids', [])
         machine_ids = data.pop('machine_ids', [])
+        self._apply_fired_invariant(data)
         collaborator = self.repository.create(**data)
         for email_data in emails_data:
             self.email_repository.create(collaborator=collaborator, **email_data)
@@ -151,6 +166,7 @@ class CollaboratorService(BaseService):
         software_ids = data.pop('software_ids', None)
         machine_ids = data.pop('machine_ids', None)
         data.pop('emails', None)  # Nested emails nao sao atualizaveis via update
+        self._apply_fired_invariant(data)
         instance = self.repository.get_by_id(pk)
         self.repository.update(instance, **data)
         if software_ids is not None:

@@ -78,6 +78,13 @@ const CollaboratorForm = ({ open, onOpenChange, onSave, initialData, isLoading, 
     }
   }, [fired, form])
 
+  // Invariante de negocio: colaborador desligado e sempre inativo.
+  useEffect(() => {
+    if (fired) {
+      form.setValue('status', false)
+    }
+  }, [fired, form])
+
   useEffect(() => {
     if (serverErrors) {
       Object.entries(serverErrors).forEach(([field, messages]) => {
@@ -136,14 +143,14 @@ const CollaboratorForm = ({ open, onOpenChange, onSave, initialData, isLoading, 
                 <FormItem className="flex items-center justify-between rounded-md border p-3">
                   <FormLabel className="text-sm">Ativo</FormLabel>
                   <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    <Switch checked={field.value} onCheckedChange={field.onChange} disabled={fired} />
                   </FormControl>
                 </FormItem>
               )} />
 
               <FormField control={form.control} name="fired" render={({ field }) => (
                 <FormItem className="flex items-center justify-between rounded-md border p-3">
-                  <FormLabel className="text-sm">Demitido</FormLabel>
+                  <FormLabel className="text-sm">Desligado</FormLabel>
                   <FormControl>
                     <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
@@ -154,7 +161,7 @@ const CollaboratorForm = ({ open, onOpenChange, onSave, initialData, isLoading, 
             {fired && (
               <FormField control={form.control} name="dateFired" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Data de Demissão</FormLabel>
+                  <FormLabel>Data de Desligamento</FormLabel>
                   <FormControl><Input type="date" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>

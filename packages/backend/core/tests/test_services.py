@@ -62,3 +62,41 @@ class TestCollaboratorService:
         collaborator.refresh_from_db()
         assert collaborator.deleted_at is not None
         assert Collaborator.objects.filter(pk=collaborator.pk).count() == 0
+
+    def test_create_fired_forces_inactive(self):
+        """Verifica que criar colaborador desligado grava status inativo.
+
+        Mesmo com status=True no payload, um colaborador com fired=True deve
+        ser persistido como inativo (invariante de negocio: desligado e inativo).
+        """
+        data = {
+            'full_name': 'Fired On Create',
+            'domain_user': 'fired.create',
+            'status': True,
+            'fired': True,
+            'date_hired': timezone.now(),
+            'office': 'TI',
+        }
+        collab = service.create(data)
+        collab.refresh_from_db()
+        assert collab.fired is True
+        assert collab.status is False
+
+    def test_update_fired_forces_inactive(self, collaborator):
+        """Verifica que desligar via update forca status inativo e persiste.
+
+        Envia apenas 'fired' no payload (update parcial) e confirma que o
+        campo status vai para False e e efetivamente gravado no banco.
+        """
+        assert collaborator.status is True
+        service.update(collaborator.pk, {'fired': True})
+        collaborator.refresh_from_db()
+        assert collaborator.fired is True
+        assert collaborator.status is False
+
+    def test_update_not_fired_preserves_status(self, collaborator):
+        """Verifica que update sem desligamento preserva o status enviado."""
+        service.update(collaborator.pk, {'fired': False, 'status': True})
+        collaborator.refresh_from_db()
+        assert collaborator.fired is False
+        assert collaborator.status is True

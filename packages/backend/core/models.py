@@ -68,7 +68,8 @@ class Collaborator(BaseModel):
     Attributes:
         full_name: Nome completo do colaborador (unique).
         domain_user: Usuario de dominio Windows (unique).
-        status: Se o colaborador esta ativo.
+        status: Se o colaborador esta ativo. Forcado a False quando desligado
+            (fired=True), pois um colaborador desligado e sempre inativo.
         perm_acess_internet: Permissao de acesso a internet.
         date_hired: Data de contratacao.
         fired: Se o colaborador foi demitido.
