@@ -5,6 +5,13 @@
  * Validação client-side via zod, campos condicionais (dateFired
  * visível quando fired=true), erros server-side via setError.
  *
+ * Invariante de negócio (espelha o backend `_apply_fired_invariant`):
+ * colaborador desligado (fired=true) é sempre inativo — o switch "Ativo"
+ * é forçado a false e desabilitado enquanto "Desligado" está ligado. A
+ * invariante é aplicada tanto ao carregar um registro (reset) quanto ao
+ * alternar "Desligado" em tempo real, para que dois registros desligados
+ * carregados em sequência não exibam status inconsistente.
+ *
  * @param {Object} props
  * @param {boolean} props.open - Controla visibilidade do Dialog.
  * @param {function} props.onOpenChange - Callback para abrir/fechar.
@@ -48,6 +55,22 @@ const DEFAULT_VALUES: CollaboratorFormData = {
   adminPrivilege: false,
 }
 
+/**
+ * Aplica a invariante "desligado ⇒ inativo" aos valores iniciais do formulário.
+ *
+ * Garante que ao carregar um colaborador já desligado o switch "Ativo" venha
+ * como false, mesmo que o registro persistido traga status=true (dado legado).
+ * Complementa o efeito de toggle em tempo real: como o reset roda a cada
+ * troca de `initialData`, a invariante vale para o segundo registro desligado
+ * carregado na mesma sessão, quando o boolean `fired` não muda entre eles.
+ *
+ * @param {CollaboratorFormData} values - Valores iniciais (registro ou defaults).
+ * @returns {CollaboratorFormData} Valores com status coerente com `fired`.
+ */
+function withFiredInvariant(values: CollaboratorFormData): CollaboratorFormData {
+  return values.fired ? { ...values, status: false } : values
+}
+
 interface CollaboratorFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -61,14 +84,14 @@ const CollaboratorForm = ({ open, onOpenChange, onSave, initialData, isLoading, 
   const isEdit = !!initialData
   const form = useForm<CollaboratorFormData>({
     resolver: zodResolver(collaboratorSchema),
-    defaultValues: initialData || DEFAULT_VALUES,
+    defaultValues: withFiredInvariant(initialData || DEFAULT_VALUES),
   })
 
   const fired = form.watch('fired')
 
   useEffect(() => {
     if (open) {
-      form.reset(initialData || DEFAULT_VALUES)
+      form.reset(withFiredInvariant(initialData || DEFAULT_VALUES))
     }
   }, [open, initialData, form])
 

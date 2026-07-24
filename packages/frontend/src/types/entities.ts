@@ -162,7 +162,7 @@ export const collaboratorSchema = z.object({
   adminPrivilege: z.boolean(),
 }).refine(
   (data) => !data.fired || data.dateFired.length > 0,
-  { message: 'Data de demissão é obrigatória quando demitido', path: ['dateFired'] }
+  { message: 'Data de desligamento é obrigatória quando desligado', path: ['dateFired'] }
 )
 
 /** Schema de validação para formulário de máquina. */
@@ -233,12 +233,32 @@ export const softwareSchema = z.object({
  * `YYYY-MM-DD`): remove qualquer componente de hora (`T…Z`) e converte vazio
  * em `null`. É a blindagem que impede o erro "Formato inválido para data" mesmo
  * que algum valor volte a carregar hora (build antigo, resposta com datetime).
+ * Valida a forma final com regex `YYYY-MM-DD`: qualquer valor malformado ou
+ * parcial (ex.: `"2024-1"`, `" "`) vira `null` em vez de ser enviado à API,
+ * de modo que a blindagem vale para toda entrada inválida, não só a com hora.
  *
  * @param value - Data do formulário (`YYYY-MM-DD`, `YYYY-MM-DDTHH:mm:ssZ`, `''`, null).
- * @returns Data pura `YYYY-MM-DD`, ou `null` quando vazia/ausente.
+ * @returns Data pura `YYYY-MM-DD`, ou `null` quando vazia/ausente/malformada.
  */
 export function toApiDate(value: string | null | undefined): string | null {
-  return value ? value.slice(0, 10) || null : null
+  if (!value) return null
+  const date = value.slice(0, 10)
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null
+}
+
+/**
+ * Converte uma data vinda da API para a data de calendário pura `YYYY-MM-DD`.
+ *
+ * Espelho de leitura de {@link toApiDate}: aplica coerção segura a string (via
+ * {@link str}) e descarta qualquer componente de hora, mantendo só os 10
+ * primeiros caracteres ISO. Centraliza o "corte de 10 caracteres" que se repetia
+ * nos conversores de formulário, eliminando a duplicação (DRY) e o número mágico.
+ *
+ * @param value - Valor de data vindo da API (`YYYY-MM-DD`, datetime, null, ...).
+ * @returns Data pura `YYYY-MM-DD`, ou `""` quando ausente/não-string.
+ */
+export function toCalendarDate(value: unknown): string {
+  return str(value).slice(0, 10)
 }
 
 /** Converte dados do formulário de colaborador para payload snake_case da API. */
@@ -341,8 +361,8 @@ export function toCollaboratorFormData(raw: Record<string, unknown>): Collaborat
     office: str(raw.office),
     status: bool(raw.status, true),
     fired: bool(raw.fired),
-    dateHired: str(raw.date_hired).slice(0, 10),
-    dateFired: str(raw.date_fired).slice(0, 10),
+    dateHired: toCalendarDate(raw.date_hired),
+    dateFired: toCalendarDate(raw.date_fired),
     permAcessInternet: bool(raw.perm_acess_internet),
     acessWifi: bool(raw.acess_wifi),
     adminPrivilege: bool(raw.admin_privilege),
@@ -364,13 +384,13 @@ export function toMachineFormData(raw: Record<string, unknown>): MachineFormData
     macAddress: str(raw.mac_address),
     administrator: str(raw.administrator),
     codJdb: str(raw.cod_jdb),
-    datePurchase: str(raw.date_purchase).slice(0, 10),
+    datePurchase: toCalendarDate(raw.date_purchase),
     quantity: num(raw.quantity, 1),
     cryptoDisk: bool(raw.crypto_disk),
     cryptoUsb: bool(raw.crypto_usb),
     cryptoMemoryCard: bool(raw.crypto_memory_card),
     soldOut: bool(raw.sold_out),
-    dateSoldOut: str(raw.date_sold_out).slice(0, 10),
+    dateSoldOut: toCalendarDate(raw.date_sold_out),
     collaboratorId: nullableNum(raw.collaborator_id),
     collaboratorName: str(raw.collaborator_name),
   }
@@ -389,8 +409,8 @@ export function toSoftwareFormData(raw: Record<string, unknown>): SoftwareFormDa
     quantityPurchase: num(raw.quantity_purchase),
     onUse: num(raw.on_use),
     departament: str(raw.departament),
-    lastPurchaseDate: str(raw.last_purchase_date).slice(0, 10),
-    expiresAt: str(raw.expires_at).slice(0, 10),
+    lastPurchaseDate: toCalendarDate(raw.last_purchase_date),
+    expiresAt: toCalendarDate(raw.expires_at),
     observation: str(raw.observation),
   }
 }
@@ -416,7 +436,7 @@ export function toCollaborator(raw: Record<string, unknown>): Collaborator {
     department: str(raw.department),
     status: bool(raw.status),
     fired: bool(raw.fired),
-    dateHired: str(raw.date_hired).slice(0, 10),
+    dateHired: toCalendarDate(raw.date_hired),
     hasServerAccess: bool(raw.has_server_access),
     hasErpAccess: bool(raw.has_erp_access),
     hasInternetAccess: bool(raw.has_internet_access),

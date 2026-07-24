@@ -108,18 +108,25 @@ class CollaboratorService(BaseService):
         self.collaborator_software_repo = CollaboratorSoftwareRepository()
         self.collaborator_machine_repo = CollaboratorMachineRepository()
 
-    def _apply_fired_invariant(self, data):
+    def _apply_fired_invariant(self, data, instance=None):
         """Garante a invariante de negocio: colaborador desligado e inativo.
 
-        Se 'fired' for verdadeiro no payload, forca status=False para manter
-        dados consistentes entre dashboard, get_active e relatorios de
-        compliance. Adiciona 'status' ao dict recebido, garantindo que o campo
-        seja persistido inclusive em updates parciais (update_fields).
+        Um colaborador desligado (fired=True) e sempre inativo (status=False),
+        para manter dados consistentes entre dashboard, get_active e relatorios
+        de compliance. A invariante e avaliada sobre o estado *efetivo* de
+        'fired': usa o valor do payload quando presente e, em updates parciais
+        que nao enviam 'fired', recorre ao valor ja persistido em 'instance'.
+        Assim um update que altera apenas 'status' de um colaborador ja
+        desligado nao consegue reativa-lo. Adiciona 'status' ao dict recebido,
+        garantindo persistencia inclusive em updates parciais (update_fields).
 
         Args:
             data: Dicionario de campos do colaborador (mutado in-place).
+            instance: Colaborador ja persistido, usado para obter o 'fired'
+                atual quando o payload nao o inclui (opcional, apenas em update).
         """
-        if data.get('fired'):
+        effective_fired = data.get('fired', instance.fired if instance else False)
+        if effective_fired:
             data['status'] = False
 
     @transaction.atomic
@@ -166,8 +173,8 @@ class CollaboratorService(BaseService):
         software_ids = data.pop('software_ids', None)
         machine_ids = data.pop('machine_ids', None)
         data.pop('emails', None)  # Nested emails nao sao atualizaveis via update
-        self._apply_fired_invariant(data)
         instance = self.repository.get_by_id(pk)
+        self._apply_fired_invariant(data, instance)
         self.repository.update(instance, **data)
         if software_ids is not None:
             for rel in self.collaborator_software_repo.filter(collaborator=instance):

@@ -100,3 +100,27 @@ class TestCollaboratorService:
         collaborator.refresh_from_db()
         assert collaborator.fired is False
         assert collaborator.status is True
+
+    def test_update_status_only_cannot_reactivate_fired(self):
+        """Verifica que update parcial de status nao reativa colaborador desligado.
+
+        Reproduz o cenario de update parcial (PATCH) que envia apenas 'status'
+        sem 'fired': para um colaborador ja desligado, a invariante deve recorrer
+        ao 'fired' persistido na instancia e manter status=False, fechando a
+        brecha em que um status-only reativava um desligado (DJR-177).
+        """
+        collab = service.create({
+            'full_name': 'Fired Persisted',
+            'domain_user': 'fired.persisted',
+            'status': True,
+            'fired': True,
+            'date_hired': timezone.now().date(),
+            'office': 'TI',
+        })
+        collab.refresh_from_db()
+        assert collab.fired is True
+        assert collab.status is False
+        service.update(collab.pk, {'status': True})
+        collab.refresh_from_db()
+        assert collab.fired is True
+        assert collab.status is False
