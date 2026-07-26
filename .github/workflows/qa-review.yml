@@ -1,0 +1,51 @@
+name: QA Agent — review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ secrets.AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
+
+      - name: Post initial status comment
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --body "🤖 QA Agent iniciando a revisão do PR..."
+
+      - name: Load QA persona
+        id: persona
+        run: |
+          {
+            echo 'text<<PERSONA_EOF'
+            cat .github/agents/qa-agent-prompt.md
+            echo 'PERSONA_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          github_token: ${{ steps.app-token.outputs.token }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: 'enrich-claude[bot]'
+          claude_args: '--allowedTools "Read,Write,Grep,Glob,Bash(gh auth status:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr edit:*),Bash(gh issue view:*)" --permission-mode dontAsk'
+          prompt: |
+            ${{ steps.persona.outputs.text }}
+
+            ---
+
+            Tarefa: revisar o Pull Request #${{ github.event.pull_request.number }} do repositório ${{ github.repository }}.
+
+            Título: ${{ github.event.pull_request.title }}
+            Corpo: ${{ github.event.pull_request.body }}
+
+            Revise o diff completo, confira se atende aos critérios de aceite da issue de story linkada, e conclua aplicando a label correspondente (`qa:ready` ou `qa:changes-requested`, conforme sua persona) e editando o comentário de status publicado no início desta execução com o veredito — `gh pr comment ${{ github.event.pull_request.number }} --edit-last --body "..."` (nunca `gh pr review` nem um comentário novo).

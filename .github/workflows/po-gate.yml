@@ -1,0 +1,165 @@
+name: PO Agent — approval gate
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  approve:
+    if: >-
+      github.event.issue.pull_request == null &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
+      startsWith(github.event.comment.body, '@claude approve')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ secrets.AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
+
+      - name: React to triggering comment
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: gh api "repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" -f content=eyes
+
+      - name: Post initial status comment
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: gh issue comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "🤖 Aprovação recebida — aplicando a label \`po:approved\` e acionando o planejamento técnico..."
+
+      - name: Load PO persona
+        id: persona
+        run: |
+          {
+            echo 'text<<PERSONA_EOF'
+            cat .github/agents/po-agent-prompt.md
+            echo 'PERSONA_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          github_token: ${{ steps.app-token.outputs.token }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: '--allowedTools "Write,Bash(gh auth status:*),Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh issue comment:*)" --permission-mode dontAsk'
+          prompt: |
+            ${{ steps.persona.outputs.text }}
+
+            ---
+
+            Tarefa: o dono do produto aprovou as estórias de usuário desta issue.
+
+            Issue: #${{ github.event.issue.number }} do repositório ${{ github.repository }}.
+            Comentário de aprovação: ${{ github.event.comment.body }}
+
+            Adicione a label `po:approved` na issue #${{ github.event.issue.number }} (comando: gh issue edit ${{ github.event.issue.number }} --add-label "po:approved"). Em seguida, edite o comentário de status publicado no início desta execução — NÃO publique um comentário novo — com `gh issue comment ${{ github.event.issue.number }} --edit-last --body "..."`, confirmando a aprovação e que o planejamento técnico foi acionado.
+
+  reject:
+    if: >-
+      github.event.issue.pull_request == null &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
+      startsWith(github.event.comment.body, '@claude reject')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ secrets.AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
+
+      - name: React to triggering comment
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: gh api "repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" -f content=eyes
+
+      - name: Post initial status comment
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: gh issue comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "🤖 Rejeição recebida — fechando a issue..."
+
+      - name: Load PO persona
+        id: persona
+        run: |
+          {
+            echo 'text<<PERSONA_EOF'
+            cat .github/agents/po-agent-prompt.md
+            echo 'PERSONA_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          github_token: ${{ steps.app-token.outputs.token }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: '--allowedTools "Write,Bash(gh auth status:*),Bash(gh issue view:*),Bash(gh issue close:*),Bash(gh issue comment:*)" --permission-mode dontAsk'
+          prompt: |
+            ${{ steps.persona.outputs.text }}
+
+            ---
+
+            Tarefa: o dono do produto rejeitou esta feature request.
+
+            Issue: #${{ github.event.issue.number }} do repositório ${{ github.repository }}.
+            Comentário de rejeição (pode conter um motivo após "@claude reject"): ${{ github.event.comment.body }}
+
+            Edite o comentário de status publicado no início desta execução — NÃO publique um comentário novo — com `gh issue comment ${{ github.event.issue.number }} --edit-last --body "..."`, reconhecendo a rejeição (inclua o motivo, se houver). Em seguida, feche a issue #${{ github.event.issue.number }} (comando: gh issue close ${{ github.event.issue.number }}).
+
+  ask_changes:
+    if: >-
+      github.event.issue.pull_request == null &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
+      startsWith(github.event.comment.body, '@claude ask')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ secrets.AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
+
+      - name: React to triggering comment
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: gh api "repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" -f content=eyes
+
+      - name: Post initial status comment
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: gh issue comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "🤖 Pedido de ajuste recebido — revisando as estórias..."
+
+      - name: Load PO persona
+        id: persona
+        run: |
+          {
+            echo 'text<<PERSONA_EOF'
+            cat .github/agents/po-agent-prompt.md
+            echo 'PERSONA_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          github_token: ${{ steps.app-token.outputs.token }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: '--allowedTools "Read,Write,Grep,Glob,Bash(gh auth status:*),Bash(gh issue view:*),Bash(gh issue comment:*)" --permission-mode dontAsk'
+          prompt: |
+            ${{ steps.persona.outputs.text }}
+
+            ---
+
+            Tarefa: o dono do produto pediu ajustes nas estórias de usuário desta issue.
+
+            Issue: #${{ github.event.issue.number }} do repositório ${{ github.repository }}.
+            Feedback (texto após "@claude ask"): ${{ github.event.comment.body }}
+
+            Releia as estórias já propostas nesta issue e o feedback acima, refine ou replaneje as estórias conforme o que foi pedido. Em vez de publicar um comentário novo, edite o comentário de status publicado no início desta execução com a versão atualizada (grave o conteúdo num arquivo com a ferramenta Write e rode `gh issue comment ${{ github.event.issue.number }} --edit-last --body-file <arquivo>`), no mesmo formato de <details> da sua persona. Ao final, peça novamente a decisão do dono do produto.

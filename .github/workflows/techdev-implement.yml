@@ -1,0 +1,57 @@
+name: Tech Dev Agent — implementation
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  implement:
+    if: github.event.label.name == 'story'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ secrets.AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
+
+      - name: Post initial status comment
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: gh issue comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "🤖 Implementação iniciada..."
+
+      - name: Load Tech Dev implementation persona
+        id: persona
+        run: |
+          {
+            echo 'text<<PERSONA_EOF'
+            cat .github/agents/techdev-implement-prompt.md
+            echo 'PERSONA_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          github_token: ${{ steps.app-token.outputs.token }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          branch_prefix: 'story/'
+          allowed_bots: 'enrich-claude[bot]'
+          claude_args: '--allowedTools "Read,Edit,Write,Grep,Glob,Bash(gh auth status:*),Bash(gh issue view:*),Bash(gh pr view:*),Bash(git:*),Bash(pip install:*),Bash(python manage.py:*),Bash(pytest:*),Bash(npm install:*),Bash(npm ci:*),Bash(npm run:*),Bash(npx:*),Bash(gh pr create:*),Bash(gh issue edit:*),Bash(gh issue comment:*)" --permission-mode dontAsk'
+          prompt: |
+            ${{ steps.persona.outputs.text }}
+
+            ---
+
+            Tarefa: implementar a issue de story #${{ github.event.issue.number }} do repositório ${{ github.repository }}.
+
+            Título: ${{ github.event.issue.title }}
+
+            Corpo da issue (especificação + todo-list de tarefas técnicas):
+            ${{ github.event.issue.body }}
+
+            Importante: a branch base deste projeto é `staging`, não `main`. Crie a branch a partir de `staging`.
+
+            Implemente a solução completa, abra um Pull Request com "Closes #${{ github.event.issue.number }}" no corpo, seguindo sua persona. Para marcar tarefas da todo-list como concluídas, edite o corpo da issue (`gh issue edit --body`) em vez de comentar — não crie comentários intermediários de progresso na issue. Ao concluir (com sucesso ou não), edite o comentário de status publicado no início desta execução — `gh issue comment ${{ github.event.issue.number }} --edit-last --body "..."` — resumindo o resultado (ex.: número do PR aberto, ou o bloqueio encontrado).

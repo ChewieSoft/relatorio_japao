@@ -1,0 +1,54 @@
+name: Tech Dev Agent — story planning
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  plan_stories:
+    if: github.event.label.name == 'po:approved'
+    concurrency:
+      group: techdev-planning-${{ github.event.issue.number }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ secrets.AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
+
+      - name: Post initial status comment
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: gh issue comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "🤖 Estórias aprovadas — quebrando em issues técnicas..."
+
+      - name: Load Tech Dev planning persona
+        id: persona
+        run: |
+          {
+            echo 'text<<PERSONA_EOF'
+            cat .github/agents/techdev-planning-prompt.md
+            echo 'PERSONA_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          github_token: ${{ steps.app-token.outputs.token }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: 'enrich-claude[bot]'
+          claude_args: '--allowedTools "Read,Write,Grep,Glob,Bash(gh auth status:*),Bash(gh issue view:*),Bash(gh issue create:*),Bash(gh issue comment:*)" --permission-mode dontAsk'
+          prompt: |
+            ${{ steps.persona.outputs.text }}
+
+            ---
+
+            Tarefa: as estórias de usuário da issue #${{ github.event.issue.number }} (repositório ${{ github.repository }}) foram aprovadas pelo dono do produto.
+
+            Leia o comentário do agente de PO nessa issue com as estórias em `<details>`, quebre cada estória em uma issue técnica de story conforme sua persona. Em vez de comentar de novo, edite o comentário de status publicado no início desta execução — `gh issue comment ${{ github.event.issue.number }} --edit-last --body-file <arquivo>` (grave o conteúdo com a ferramenta Write) — com um checklist linkando todas as issues criadas.
+
+            Labels da issue original: ${{ join(github.event.issue.labels.*.name, ', ') }}

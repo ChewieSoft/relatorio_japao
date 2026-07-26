@@ -1,0 +1,23 @@
+- name: feature-request
+  color: "0E8A16"
+  description: Pedido de nova feature — dispara o agente de PO
+
+- name: "product:relatorio-japao"
+  color: "5319E7"
+  description: Feature relacionada ao Relatório JRC Brasil
+
+- name: "po:approved"
+  color: "1D76DB"
+  description: Estórias de usuário aprovadas pelo dono do produto — dispara o planejamento técnico
+
+- name: story
+  color: "FBCA04"
+  description: Issue técnica de uma estória de usuário — dispara a implementação automática
+
+- name: "qa:ready"
+  color: "0E8A16"
+  description: PR revisado e aprovado pelo agente de QA
+
+- name: "qa:changes-requested"
+  color: "D93F0B"
+  description: PR com mudanças solicitadas pelo agente de QA
